@@ -4,16 +4,16 @@ bl_info = {
     "author": "Reslav Hollos",
     "version": (0, 1),
     "blender": (2, 72, 0),
-    "description": "Lock vertices on flat line, unselectable edge loops for subdivision",
+    "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
 #    "wiki_url": "",
     "category": "Object"
 }
 
-class ModalTimerOperator(bpy.types.Operator):
-    """Operator which runs its self from a timer"""
-    bl_idname = "wm.modal_timer_operator"
-    bl_label = "Modal Timer Operator"
+class Edger(bpy.types.Operator):
+    """Lock vertices on edge"""
+    bl_idname = "wm.edger"
+    bl_label = "Edger"
     
     _timer = None
 
@@ -39,12 +39,13 @@ class ModalTimerOperator(bpy.types.Operator):
         return {'CANCELLED'}
 
 
+
 def register():
-    bpy.utils.register_class(ModalTimerOperator)
+    bpy.utils.register_class(Edger)
 
 
 def unregister():
-    bpy.utils.unregister_class(ModalTimerOperator)
+    bpy.utils.unregister_class(Edger)
 
 
 if __name__ == "__main__":
