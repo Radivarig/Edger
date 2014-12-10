@@ -1,5 +1,14 @@
 import bpy
-
+bl_info = {
+    "name": "Edger",
+    "author": "Reslav Hollos",
+    "version": (0, 1),
+    "blender": (2, 72, 0),
+    "description": "Lock vertices on flat line, unselectable edge loops for subdivision",
+    "warning": "",
+#    "wiki_url": "",
+    "category": "Object"
+}
 
 class ModalTimerOperator(bpy.types.Operator):
     """Operator which runs its self from a timer"""
