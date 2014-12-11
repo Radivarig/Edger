@@ -11,7 +11,17 @@ bl_info = {
 }
 
 def AddVertexGroup(name, addSelected = True):
-    bpy.ops.object.vertex_group_add()
+    bpy.context.scene.objects.active.vertex_groups.new(name)
+    return
+    
+def DeselectGroups():
+    for g in bpy.context.scene.objects.active.vertex_groups:
+        if g.name.startswith("_edger_"):
+            DeselectGroup(g)
+
+def DeselectGroup(group):
+    print("bla")
+    return
     
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
@@ -21,7 +31,7 @@ class EdgerFunc1(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
-        AddVertexGroup("asd")
+        AddVertexGroup("_edger_")
         
         return {'FINISHED'}
     
@@ -41,9 +51,8 @@ class Edger(bpy.types.Operator):
         if event.type == 'TIMER':
             for g in context.object.vertex_groups:
                 if g.name.startswith("_edger_"):
-                    print(dir(g))
-                    #g.vertex_group_assign()
-            
+                    DeselectGroups()
+                    
             # change theme color, silly!
             color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
             color.s = 1.0
