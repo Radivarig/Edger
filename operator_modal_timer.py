@@ -1,8 +1,10 @@
 import bpy
+import bmesh
+
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 1),
+    "version": (0, 1, 1),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -15,14 +17,24 @@ def AddVertexGroup(name, addSelected = True):
     return
     
 def DeselectGroups():
-    for g in bpy.context.scene.objects.active.vertex_groups:
+    obj = bpy.context.object
+    me = obj.data
+    bm = bmesh.from_edit_mesh(me)
+    groups= []
+    for g in obj.vertex_groups:
         if g.name.startswith("_edger_"):
-            DeselectGroup(g)
-
-def DeselectGroup(group):
-    print("bla")
-    return
+            groups.append(g.index)
     
+    deform_layer = bm.verts.layers.deform.active
+    if deform_layer is None: 
+        deform_layer = bm.verts.layers.deform.new()
+    
+    for v in bm.verts:
+        for g in groups:
+            if g in v[deform_layer]:
+                v.select = False
+                break
+                
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
     bl_idname = "wm.edger_func1_idname"
@@ -31,7 +43,8 @@ class EdgerFunc1(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
-        AddVertexGroup("_edger_")
+        #AddVertexGroup("_edger_")
+        DeselectGroups()
         
         return {'FINISHED'}
     
@@ -49,9 +62,8 @@ class Edger(bpy.types.Operator):
             return self.cancel(context)
 
         if event.type == 'TIMER':
-            for g in context.object.vertex_groups:
-                if g.name.startswith("_edger_"):
-                    DeselectGroups()
+            if context.object.mode == "EDIT":
+                DeselectGroups()
                     
             # change theme color, silly!
             color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
