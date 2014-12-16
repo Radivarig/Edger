@@ -34,7 +34,19 @@ def DeselectGroups():
             if g in v[deform_layer]:
                 v.select = False
                 break
-                
+   
+def AdjacentVerts(v):
+    obj = bpy.context.object
+    me = obj.data
+    bm = bmesh.from_edit_mesh(me)
+    
+    adjacent = []
+    #for v in bm.verts:
+        #if v.select is targetV:
+    for e in v.link_edges:
+        adjacent.append(e.other_vert(v))
+    return adjacent
+        
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
     bl_idname = "wm.edger_func1_idname"
@@ -44,8 +56,21 @@ class EdgerFunc1(bpy.types.Operator):
     
     def execute(self, context):
         #AddVertexGroup("_edger_")
-        DeselectGroups()
+        #DeselectGroups()
+        print("fkfk222")
         
+        obj = bpy.context.object
+        me = obj.data
+        bm = bmesh.from_edit_mesh(me)
+        list = []
+        for v in bm.verts:
+            if v.select is True:
+                list = AdjacentVerts(v)
+        
+        print(len(list))
+        for v in list:
+            v.select = True
+            
         return {'FINISHED'}
     
 class Edger(bpy.types.Operator):
