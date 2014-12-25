@@ -12,11 +12,42 @@ bl_info = {
     "category": "Object"
 }
 
+#TODO GetGroupVerts() called bellow for it has to be defined first, find better way to init operator
+groupVerts = {}     #dict[group] = [list, of, vertices]
+obj = bpy.context.object
+me = obj.data
+bm = bmesh.from_edit_mesh(me)
+
+def UpdateBm():
+    obj = bpy.context.object
+    me = obj.data
+    bmesh.update_edit_mesh(me)
+    
+def GetGroupVerts():
+    groupVerts.clear()
+    UpdateBm()
+    
+    for g in obj.vertex_groups:
+        if g.name.startswith("_edger_"):
+            groupVerts[g.index] = []
+    
+    deform_layer = bm.verts.layers.deform.active
+    if deform_layer is None: 
+        deform_layer = bm.verts.layers.deform.new()
+    
+    for v in bm.verts:
+        for g in groupVerts:
+            if g in v[deform_layer]:
+                groupVerts[g].append(v)
+                break
+#TODO
+GetGroupVerts()
+
 def AddVertexGroup(name, addSelected = True):
     bpy.context.scene.objects.active.vertex_groups.new(name)
     return
-    
-def DeselectGroups():
+
+'''def DeselectGroups():
     obj = bpy.context.object
     me = obj.data
     bm = bmesh.from_edit_mesh(me)
@@ -34,12 +65,15 @@ def DeselectGroups():
             if g in v[deform_layer]:
                 v.select = False
                 break
-   
-def AdjacentVerts(v):
-    obj = bpy.context.object
-    me = obj.data
-    bm = bmesh.from_edit_mesh(me)
-    
+''' 
+def DeselectGroups():
+    UpdateBm()
+    for g in groupVerts:
+        for v in groupVerts[g]:
+            print(v)
+            v.select = False
+            
+def AdjacentVerts(v):    
     adjacent = []
     #for v in bm.verts:
         #if v.select is targetV:
@@ -56,10 +90,12 @@ class EdgerFunc1(bpy.types.Operator):
     
     def execute(self, context):
         #AddVertexGroup("_edger_")
-        #DeselectGroups()
-        print("fkfk222")
+        DeselectGroups()
         
-        obj = bpy.context.object
+        print("fkfk222")
+        return {'FINISHED'}
+        
+        '''obj = bpy.context.object
         me = obj.data
         bm = bmesh.from_edit_mesh(me)
         list = []
@@ -71,8 +107,18 @@ class EdgerFunc1(bpy.types.Operator):
         for v in list:
             v.select = True
             
-        return {'FINISHED'}
+        return {'FINISHED'}'''
     
+class AdjInfoForVertex(object):
+    def __init__(self, target, end1, end2):
+        self.target = target;
+        self.end1 = end1;
+        self.end2 = end2;
+        self.updateRatio();
+
+    def updateRatio(self):
+        self.ratio = 0.7; #0 is end1, 1 is end2
+     
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
