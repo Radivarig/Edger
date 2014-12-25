@@ -1,5 +1,6 @@
 import bpy
 import bmesh
+import mathutils
 
 bl_info = {
     "name": "Edger",
@@ -21,12 +22,11 @@ bm = bmesh.from_edit_mesh(me)
 def UpdateBm():
     obj = bpy.context.object
     me = obj.data
-    bmesh.update_edit_mesh(me)
+    bm = bmesh.from_edit_mesh(me)
     
 def GetGroupVerts():
-    groupVerts.clear()
     UpdateBm()
-    
+    groupVerts.clear()
     for g in obj.vertex_groups:
         if g.name.startswith("_edger_"):
             groupVerts[g.index] = []
@@ -90,25 +90,65 @@ class EdgerFunc1(bpy.types.Operator):
     
     def execute(self, context):
         #AddVertexGroup("_edger_")
-        DeselectGroups()
+        #DeselectGroups()
         
         print("fkfk222")
-        return {'FINISHED'}
+        #return {'FINISHED'}
         
-        '''obj = bpy.context.object
-        me = obj.data
-        bm = bmesh.from_edit_mesh(me)
+        UpdateBm()
+        
         list = []
+        list2 = []
         for v in bm.verts:
             if v.select is True:
                 list = AdjacentVerts(v)
+                v.select = False
         
-        print(len(list))
-        for v in list:
+                if AreVertsCollinear(v, list[0], list[1]):
+                    list2.append(v)
+                    list2.append(list[0])
+                    list2.append(list[1])
+                    break
+                if AreVertsCollinear(v, list[1], list[2]):
+                    list2.append(v)
+                    list2.append(list[1])
+                    list2.append(list[2])
+                    break
+                if AreVertsCollinear(v, list[2], list[3]):
+                    list2.append(v)
+                    list2.append(list[2])
+                    list2.append(list[3])
+                    break
+                
+        for v in bm.verts:
+            v.select = False
+        
+        print(list2)
+        for v in list2:
             v.select = True
-            
-        return {'FINISHED'}'''
+        
+        #print(len(list))
+        #for v in list:
+        #    v.select = True
+        
+        me.update()
+        return {'FINISHED'}
+
+#TODO calculate over slope so it is scale independant
+def AreVertsCollinear(a, b, c, allowedError = 0.1):
+    area = mathutils.geometry.area_tri(a.co, b.co, c.co)
+    #print(area)    
+    if abs(area) <= allowedError:
+        return True
+    return False 
     
+def AreNumbersSame(a, b, c, allowedError = 0):
+    if abs(a -b) <= allowedError and \
+       abs(b -c) <= allowedError and \
+       abs(c -a) <= allowedError:
+           return True
+    return False    
+
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
         self.target = target;
