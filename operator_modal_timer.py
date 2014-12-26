@@ -1,6 +1,7 @@
 import bpy
 import bmesh
 import mathutils
+import itertools
 
 bl_info = {
     "name": "Edger",
@@ -15,6 +16,7 @@ bl_info = {
 
 #TODO GetGroupVerts() called bellow for it has to be defined first, find better way to init operator
 groupVerts = {}     #dict[group] = [list, of, vertices]
+
 obj = bpy.context.object
 me = obj.data
 bm = bmesh.from_edit_mesh(me)
@@ -75,11 +77,20 @@ def DeselectGroups():
             
 def AdjacentVerts(v):    
     adjacent = []
-    #for v in bm.verts:
-        #if v.select is targetV:
     for e in v.link_edges:
         adjacent.append(e.other_vert(v))
     return adjacent
+
+def AdjCollinearVertsWith(v):
+    adjacent = AdjacentVerts(v)
+    subsets = SubsetsOf(adjacent, 2)
+    for sub in subsets:
+        if AreVertsCollinear(v, sub[0], sub[1]):
+            return [sub[0], sub[1]]
+    return []
+    
+def SubsetsOf(S, m):
+    return set(itertools.combinations(S, m))
         
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
@@ -95,59 +106,45 @@ class EdgerFunc1(bpy.types.Operator):
         print("fkfk222")
         #return {'FINISHED'}
         
+        #GetGroupVerts()
         UpdateBm()
         
-        list = []
-        list2 = []
-        for v in bm.verts:
-            if v.select is True:
-                list = AdjacentVerts(v)
-                v.select = False
+        for g in groupVerts:
+            for v in groupVerts[g]:
+                list = AdjCollinearVertsWith(v)
         
-                if AreVertsCollinear(v, list[0], list[1]):
-                    list2.append(v)
-                    list2.append(list[0])
-                    list2.append(list[1])
-                    break
-                if AreVertsCollinear(v, list[1], list[2]):
-                    list2.append(v)
-                    list2.append(list[1])
-                    list2.append(list[2])
-                    break
-                if AreVertsCollinear(v, list[2], list[3]):
-                    list2.append(v)
-                    list2.append(list[2])
-                    list2.append(list[3])
-                    break
+                bla = AdjInfoForVertex(v, list[0], list[1])
+                print("ratio:")
+                print(bla.ratio)
                 
-        for v in bm.verts:
-            v.select = False
+                #v.select = False
+                #break
         
-        print(list2)
-        for v in list2:
-            v.select = True
-        
-        #print(len(list))
-        #for v in list:
-        #    v.select = True
-        
+        #        for v in bm.verts:
+        #            v.select = False
+                
+        #        print(list)
+        #        for v in list:
+        #            v.select = True        
+                
         me.update()
         return {'FINISHED'}
 
 #TODO calculate over slope so it is scale independant
-def AreVertsCollinear(a, b, c, allowedError = 0.1):
+def AreVertsCollinear(a, b, c, allowedError = 0.05):
     area = mathutils.geometry.area_tri(a.co, b.co, c.co)
-    #print(area)    
+    # print(area)
     if abs(area) <= allowedError:
         return True
     return False 
-    
-def AreNumbersSame(a, b, c, allowedError = 0):
+
+'''def AreNumbersSame(a, b, c, allowedError = 0):
     if abs(a -b) <= allowedError and \
        abs(b -c) <= allowedError and \
        abs(c -a) <= allowedError:
            return True
-    return False    
+    return False
+'''
 
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
@@ -157,7 +154,9 @@ class AdjInfoForVertex(object):
         self.updateRatio();
 
     def updateRatio(self):
-        self.ratio = 0.7; #0 is end1, 1 is end2
+        end1ToTarget = (self.end1.co -self.target.co).length
+        end1ToEnd2 = (self.end1.co -self.end2.co).length
+        self.ratio = end1ToTarget/end1ToEnd2; #0 is end1, 1 is end2
      
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
