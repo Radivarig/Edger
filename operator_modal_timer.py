@@ -16,6 +16,7 @@ bl_info = {
 
 #TODO GetGroupVerts() called bellow for it has to be defined first, find better way to init operator
 groupVerts = {}     #dict[group] = [list, of, vertices]
+adjInfos = []
 
 obj = bpy.context.object
 me = obj.data
@@ -92,6 +93,14 @@ def AdjCollinearVertsWith(v):
 def SubsetsOf(S, m):
     return set(itertools.combinations(S, m))
         
+def GetAdjInfos():
+    adjInfos.clear()
+    for g in groupVerts:
+        for v in groupVerts[g]:
+            adjColl = AdjCollinearVertsWith(v)
+            aifv = AdjInfoForVertex(v, adjColl[0], adjColl[1])
+            adjInfos.append(aifv)
+
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
     bl_idname = "wm.edger_func1_idname"
@@ -108,24 +117,10 @@ class EdgerFunc1(bpy.types.Operator):
         
         #GetGroupVerts()
         UpdateBm()
+        #GetAdjInfos()
         
-        for g in groupVerts:
-            for v in groupVerts[g]:
-                list = AdjCollinearVertsWith(v)
-        
-                bla = AdjInfoForVertex(v, list[0], list[1])
-                print("ratio:")
-                print(bla.ratio)
-                
-                #v.select = False
-                #break
-        
-        #        for v in bm.verts:
-        #            v.select = False
-                
-        #        print(list)
-        #        for v in list:
-        #            v.select = True        
+        for i in adjInfos:
+            i.LockTargetOnEdge()
                 
         me.update()
         return {'FINISHED'}
@@ -151,13 +146,20 @@ class AdjInfoForVertex(object):
         self.target = target;
         self.end1 = end1;
         self.end2 = end2;
-        self.updateRatio();
+        self.UpdateRatio();
 
-    def updateRatio(self):
+    def UpdateRatio(self):
         end1ToTarget = (self.end1.co -self.target.co).length
         end1ToEnd2 = (self.end1.co -self.end2.co).length
         self.ratio = end1ToTarget/end1ToEnd2; #0 is end1, 1 is end2
-     
+    
+    def LockTargetOnEdge(self):
+        # c = a + r(b -a)
+        self.target.co = self.end1.co + self.ratio*(self.end2.co - self.end1.co)
+                
+#TODO
+GetAdjInfos()
+
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -174,6 +176,11 @@ class Edger(bpy.types.Operator):
         if event.type == 'TIMER':
             if context.object.mode == "EDIT":
                 DeselectGroups()
+                
+                UpdateBm()
+                #GetAdjInfos()
+                for i in adjInfos:
+                    i.LockTargetOnEdge()
                     
             # change theme color, silly!
             color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
