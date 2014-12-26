@@ -13,9 +13,9 @@ bl_info = {
 #    "wiki_url": "",
     "category": "Object"
 }
-    
-def GetGroupVerts():
-    groupVerts.clear()
+
+def GetGroupVerts(obj, bm):
+    groupVerts = {}             #dict[g.index] = [list, of, vertices]
     for g in obj.vertex_groups:
         if g.name.startswith("_edger_"):
             groupVerts[g.index] = []
@@ -29,15 +29,16 @@ def GetGroupVerts():
             if g in v[deform_layer]:
                 groupVerts[g].append(v)
                 break
+    return groupVerts
 
 def AddVertexGroup(name, addSelected = True):
+    #TODO make check if selected are already part of _edger_ group
     bpy.context.scene.objects.active.vertex_groups.new(name)
     return
 
-def DeselectGroups():
+def DeselectGroups(groupVerts):
     for g in groupVerts:
         for v in groupVerts[g]:
-            print(v)
             v.select = False
             
 def AdjacentVerts(v):    
@@ -57,13 +58,15 @@ def AdjCollinearVertsWith(v):
 def SubsetsOf(S, m):
     return set(itertools.combinations(S, m))
         
-def GetAdjInfos():
-    adjInfos.clear()
+def GetAdjInfos(groupVerts):
+    adjInfos = []
     for g in groupVerts:
         for v in groupVerts[g]:
             adjColl = AdjCollinearVertsWith(v)
-            aifv = AdjInfoForVertex(v, adjColl[0], adjColl[1])
-            adjInfos.append(aifv)
+            if len(adjColl) is 2:
+                aifv = AdjInfoForVertex(v, adjColl[0], adjColl[1])
+                adjInfos.append(aifv)
+    return adjInfos
 
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
@@ -76,10 +79,10 @@ class EdgerFunc1(bpy.types.Operator):
         #AddVertexGroup("_edger_")
         #DeselectGroups()
         
-        for i in adjInfos:
-            i.LockTargetOnEdge()
+        #for i in adjInfos:
+        #    i.LockTargetOnEdge()
                 
-        me.update()
+        #me.update()
         return {'FINISHED'}
 
 #TODO calculate over slope so it is scale independant
@@ -106,6 +109,19 @@ class AdjInfoForVertex(object):
         # c = a + r(b -a)
         self.target.co = self.end1.co + self.ratio*(self.end2.co - self.end1.co)
 
+def LockVertsOnEdge(obj, bm, adjInfos):
+    for i in adjInfos:
+        i.LockTargetOnEdge()
+    
+
+#INIT
+obj = bpy.context.object
+me = obj.data
+bm = bmesh.from_edit_mesh(me)         
+#this has to be global to sustain adjInfos through modal calls   
+groupVerts = GetGroupVerts(obj, bm)
+adjInfos = GetAdjInfos(groupVerts)
+                
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -115,31 +131,34 @@ class Edger(bpy.types.Operator):
     
     _timer = None
 
-    groupVerts = {}     #dict[group] = [list, of, vertices]
-    adjInfos = []
- 
+
     def modal(self, context, event):
         if event.type == 'ESC':
             return self.cancel(context)
-
+        
         if event.type == 'TIMER':
+            if context.object is None:
+                return {'PASS_THROUGH'}
+            
             if context.object.mode == "EDIT":
                 obj = context.object
                 me = obj.data
                 bm = bmesh.from_edit_mesh(me)
                 
-                for i in adjInfos:
-                    i.LockTargetOnEdge()
-                    
-            # change theme color, silly!
-            color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
-            color.s = 1.0
-            color.h += 0.01
+                DeselectGroups(groupVerts)
+                LockVertsOnEdge(obj, bm, adjInfos)
+                
+                #me.update()
+                
+                # change theme color, silly!
+                color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
+                color.s = 1.0
+                color.h += 0.01
 
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        self._timer = context.window_manager.event_timer_add(0.1, context.window)
+        self._timer = context.window_manager.event_timer_add(1, context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
