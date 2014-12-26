@@ -13,22 +13,8 @@ bl_info = {
 #    "wiki_url": "",
     "category": "Object"
 }
-
-#TODO GetGroupVerts() called bellow for it has to be defined first, find better way to init operator
-groupVerts = {}     #dict[group] = [list, of, vertices]
-adjInfos = []
-
-obj = bpy.context.object
-me = obj.data
-bm = bmesh.from_edit_mesh(me)
-
-def UpdateBm():
-    obj = bpy.context.object
-    me = obj.data
-    bm = bmesh.from_edit_mesh(me)
     
 def GetGroupVerts():
-    UpdateBm()
     groupVerts.clear()
     for g in obj.vertex_groups:
         if g.name.startswith("_edger_"):
@@ -43,34 +29,12 @@ def GetGroupVerts():
             if g in v[deform_layer]:
                 groupVerts[g].append(v)
                 break
-#TODO
-GetGroupVerts()
 
 def AddVertexGroup(name, addSelected = True):
     bpy.context.scene.objects.active.vertex_groups.new(name)
     return
 
-'''def DeselectGroups():
-    obj = bpy.context.object
-    me = obj.data
-    bm = bmesh.from_edit_mesh(me)
-    groups= []
-    for g in obj.vertex_groups:
-        if g.name.startswith("_edger_"):
-            groups.append(g.index)
-    
-    deform_layer = bm.verts.layers.deform.active
-    if deform_layer is None: 
-        deform_layer = bm.verts.layers.deform.new()
-    
-    for v in bm.verts:
-        for g in groups:
-            if g in v[deform_layer]:
-                v.select = False
-                break
-''' 
 def DeselectGroups():
-    UpdateBm()
     for g in groupVerts:
         for v in groupVerts[g]:
             print(v)
@@ -112,13 +76,6 @@ class EdgerFunc1(bpy.types.Operator):
         #AddVertexGroup("_edger_")
         #DeselectGroups()
         
-        print("fkfk222")
-        #return {'FINISHED'}
-        
-        #GetGroupVerts()
-        UpdateBm()
-        #GetAdjInfos()
-        
         for i in adjInfos:
             i.LockTargetOnEdge()
                 
@@ -131,15 +88,7 @@ def AreVertsCollinear(a, b, c, allowedError = 0.05):
     # print(area)
     if abs(area) <= allowedError:
         return True
-    return False 
-
-'''def AreNumbersSame(a, b, c, allowedError = 0):
-    if abs(a -b) <= allowedError and \
-       abs(b -c) <= allowedError and \
-       abs(c -a) <= allowedError:
-           return True
     return False
-'''
 
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
@@ -156,9 +105,6 @@ class AdjInfoForVertex(object):
     def LockTargetOnEdge(self):
         # c = a + r(b -a)
         self.target.co = self.end1.co + self.ratio*(self.end2.co - self.end1.co)
-                
-#TODO
-GetAdjInfos()
 
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
@@ -169,16 +115,19 @@ class Edger(bpy.types.Operator):
     
     _timer = None
 
+    groupVerts = {}     #dict[group] = [list, of, vertices]
+    adjInfos = []
+ 
     def modal(self, context, event):
         if event.type == 'ESC':
             return self.cancel(context)
 
         if event.type == 'TIMER':
             if context.object.mode == "EDIT":
-                DeselectGroups()
+                obj = context.object
+                me = obj.data
+                bm = bmesh.from_edit_mesh(me)
                 
-                UpdateBm()
-                #GetAdjInfos()
                 for i in adjInfos:
                     i.LockTargetOnEdge()
                     
