@@ -14,6 +14,15 @@ bl_info = {
     "category": "Object"
 }
 
+#TODO HIGH PRIORITY cross verts have ununique ajacent commplanars => causes mesh to collapse 
+#TODO moving and canceling with RMB spawns shadows
+#TODO update BMesh when it changes like switching to obj mode and back
+#TODO continue modal when another operator is active
+#TODO deselect groups toggle button
+#TODO remove empty groups
+#TODO detect and remove from groups button
+#TODO add waring when select mode isn't vertex
+
 def GetGroupVerts(obj, bm):
     groupVerts = {}             #dict[g.index] = [list, of, vertices]
     for g in obj.vertex_groups:
@@ -34,6 +43,7 @@ def GetGroupVerts(obj, bm):
 def AddVertexGroup(name, addSelected = True):
     #TODO make check if selected are already part of _edger_ group
     bpy.context.scene.objects.active.vertex_groups.new(name)
+    
     return
 
 def DeselectGroups(groupVerts):
@@ -54,7 +64,8 @@ def AdjCollinearVertsWith(v):
         if AreVertsCollinear(v, sub[0], sub[1]):
             return [sub[0], sub[1]]
     return []
-    
+
+#TODO check if this is repeating combinations, if yes divide by 
 def SubsetsOf(S, m):
     return set(itertools.combinations(S, m))
         
@@ -76,7 +87,7 @@ class EdgerFunc1(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
-        #AddVertexGroup("_edger_")
+        AddVertexGroup("_edger_")
         #DeselectGroups()
         
         #for i in adjInfos:
@@ -141,24 +152,25 @@ class Edger(bpy.types.Operator):
                 return {'PASS_THROUGH'}
             
             if context.object.mode == "EDIT":
+                
                 obj = context.object
                 me = obj.data
                 bm = bmesh.from_edit_mesh(me)
-                
+                    
                 DeselectGroups(groupVerts)
                 LockVertsOnEdge(obj, bm, adjInfos)
                 
-                #me.update()
+                me.update()
                 
                 # change theme color, silly!
-                color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
-                color.s = 1.0
-                color.h += 0.01
+                #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
+                #color.s = 1.0
+                #color.h += 0.01
 
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        self._timer = context.window_manager.event_timer_add(1, context.window)
+        self._timer = context.window_manager.event_timer_add(0.1, context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
