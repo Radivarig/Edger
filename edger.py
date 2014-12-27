@@ -156,7 +156,7 @@ class Edger(bpy.types.Operator):
                 #color.s = 1.0
                 #color.h += 0.01
             else:
-                global isEditMode; isEditMode = False
+                isEditMode = False
 
         return {'PASS_THROUGH'}
 
