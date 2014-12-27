@@ -14,14 +14,13 @@ bl_info = {
 }
 
 #TODO moving and canceling with RMB spawns shadows
-#TODO update BMesh when it changes due to deletion/creation of verts, also update groups 
-#TODO continue modal when another operator is active
-#TODO deselect groups toggle button
+#TODO update vertex_groups on ReInit() 
+#TODO buttons: deselect groups toggle, add to new group, create object without groups, 
 #TODO remove empty groups
 #TODO detect and remove from groups button
 
 def GetGroupVerts(obj, bm):
-    groupVerts = {}             #dict[g.index] = [list, of, vertices]
+    groupVerts = {}
     if obj and bm:
         for g in obj.vertex_groups:
             if g.name.startswith("_edger_"):
@@ -46,8 +45,11 @@ def AddVertexGroup(name, addSelected = True):
 def DeselectGroups(groupVerts):
     for g in groupVerts:
         for v in groupVerts[g]:
-            v.select = False
-            
+            try:
+                v.select = False
+            except:
+                ReInit()
+                
 def AdjacentVerts(v, exclude = []):    
     adjacent = []
     for e in v.link_edges:
@@ -100,16 +102,24 @@ def LockVertsOnEdge(obj, bm, adjInfos):
         i.LockTargetOnEdge()
     
 #INIT
+def ReInit():
+    global obj, me, bm
+    global groupVerts, adjInfos
+    obj = bpy.context.object
+    me = obj.data
+    bm = bmesh.from_edit_mesh(me)
+    groupVerts = GetGroupVerts(obj, bm)
+    adjInfos = GetAdjInfos(groupVerts)
+
 #has to be global to sustain adjInfos through modal calls
 isEditMode = False
 obj = bpy.context.object
 me, bm = None, None
+groupVerts = {}     #dict[g.index] = [list, of, vertices]
+adjInfos = []
 if obj is not None:
     if obj.mode == "EDIT":
-        me = obj.data
-        bm = bmesh.from_edit_mesh(me)
-groupVerts = GetGroupVerts(obj, bm)
-adjInfos = GetAdjInfos(groupVerts)
+        ReInit()
 
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
@@ -135,12 +145,7 @@ class Edger(bpy.types.Operator):
                 
                 if isEditMode is False:
                     isEditMode = True
-                    obj = context.object
-                    me = obj.data
-                    bm = bmesh.from_edit_mesh(me)
-                    groupVerts = GetGroupVerts(obj, bm)
-                    adjInfos = GetAdjInfos(groupVerts)
-                    
+                    ReInit()
                 DeselectGroups(groupVerts)
                 LockVertsOnEdge(obj, bm, adjInfos)
                 
@@ -152,7 +157,6 @@ class Edger(bpy.types.Operator):
                 #color.h += 0.01
             else:
                 global isEditMode; isEditMode = False
-            
 
         return {'PASS_THROUGH'}
 
