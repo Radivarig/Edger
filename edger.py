@@ -5,7 +5,7 @@ import mathutils
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 0),
+    "version": (0, 2, 1),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -19,22 +19,22 @@ bl_info = {
 #TODO deselect groups toggle button
 #TODO remove empty groups
 #TODO detect and remove from groups button
-#TODO add waring when select mode isn't vertex
 
 def GetGroupVerts(obj, bm):
     groupVerts = {}             #dict[g.index] = [list, of, vertices]
-    for g in obj.vertex_groups:
-        if g.name.startswith("_edger_"):
-            groupVerts[g.index] = []
-    
-    deform_layer = bm.verts.layers.deform.active
-    if deform_layer is None: 
-        deform_layer = bm.verts.layers.deform.new()
-    
-    for v in bm.verts:
-        for g in groupVerts:
-            if g in v[deform_layer]:
-                groupVerts[g].append(v)
+    if obj and bm:
+        for g in obj.vertex_groups:
+            if g.name.startswith("_edger_"):
+                groupVerts[g.index] = []
+        
+        deform_layer = bm.verts.layers.deform.active
+        if deform_layer is None: 
+            deform_layer = bm.verts.layers.deform.new()
+        
+        for v in bm.verts:
+            for g in groupVerts:
+                if g in v[deform_layer]:
+                    groupVerts[g].append(v)
     return groupVerts
 
 def AddVertexGroup(name, addSelected = True):
@@ -102,8 +102,11 @@ def LockVertsOnEdge(obj, bm, adjInfos):
 
 #INIT
 obj = bpy.context.object
-me = obj.data
-bm = bmesh.from_edit_mesh(me)         
+me, bm = None, None
+if obj is not None:
+    if obj.mode == "EDIT":
+        me = obj.data
+        bm = bmesh.from_edit_mesh(me)
 #this has to be global to sustain adjInfos through modal calls   
 groupVerts = GetGroupVerts(obj, bm)
 adjInfos = GetAdjInfos(groupVerts)
@@ -116,7 +119,6 @@ class Edger(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     _timer = None
-
 
     def modal(self, context, event):
         if event.type == 'ESC':
