@@ -97,7 +97,7 @@ class AdjInfoForVertex(object):
         # c = a + r(b -a)
         self.target.co = self.end1.co + self.ratio*(self.end2.co - self.end1.co)
 
-def LockVertsOnEdge(obj, bm, adjInfos):
+def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
     
@@ -147,7 +147,7 @@ class Edger(bpy.types.Operator):
                     isEditMode = True
                     ReInit()
                 DeselectGroups(groupVerts)
-                LockVertsOnEdge(obj, bm, adjInfos)
+                LockVertsOnEdge(adjInfos)
                 
                 me.update()
                 
