@@ -66,20 +66,6 @@ def GetAdjInfos(groupVerts):
                 aifv = AdjInfoForVertex(v, adj[0], adj[1])
                 adjInfos.append(aifv)
     return adjInfos
-
-class EdgerFunc1(bpy.types.Operator):
-    """EdgerFunc1"""
-    bl_idname = "wm.edger_func1_idname"
-    bl_label = "EdgerFunc1_label"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    
-    def execute(self, context):
-        AddVertexGroup("_edger_")
-        #DeselectGroups()
-        
-        #me.update()
-        return {'FINISHED'}
     
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
@@ -120,6 +106,20 @@ adjInfos = []
 if obj is not None:
     if obj.mode == "EDIT":
         ReInit()
+
+class EdgerFunc1(bpy.types.Operator):
+    """EdgerFunc1"""
+    bl_idname = "wm.edger_func1_idname"
+    bl_label = "EdgerFunc1_label"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    
+    def execute(self, context):
+        AddVertexGroup("_edger_")
+        #DeselectGroups()
+        
+        #me.update()
+        return {'FINISHED'}
 
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
