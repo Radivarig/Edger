@@ -14,7 +14,7 @@ bl_info = {
 }
 
 #TODO moving and canceling with RMB spawns shadows
-#TODO update BMesh when it changes like switching to obj mode and back
+#TODO update BMesh when it changes due to deletion/creation of verts, also update groups 
 #TODO continue modal when another operator is active
 #TODO deselect groups toggle button
 #TODO remove empty groups
@@ -99,18 +99,18 @@ def LockVertsOnEdge(obj, bm, adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
     
-
 #INIT
+#has to be global to sustain adjInfos through modal calls
+isEditMode = False
 obj = bpy.context.object
 me, bm = None, None
 if obj is not None:
     if obj.mode == "EDIT":
         me = obj.data
         bm = bmesh.from_edit_mesh(me)
-#this has to be global to sustain adjInfos through modal calls   
 groupVerts = GetGroupVerts(obj, bm)
 adjInfos = GetAdjInfos(groupVerts)
-                
+
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -119,7 +119,7 @@ class Edger(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     _timer = None
-
+    
     def modal(self, context, event):
         if event.type == 'ESC':
             return self.cancel(context)
@@ -129,10 +129,17 @@ class Edger(bpy.types.Operator):
                 return {'PASS_THROUGH'}
             
             if context.object.mode == "EDIT":
+                global isEditMode
+                global obj, me, bm
+                global groupVerts, adjInfos
                 
-                obj = context.object
-                me = obj.data
-                bm = bmesh.from_edit_mesh(me)
+                if isEditMode is False:
+                    isEditMode = True
+                    obj = context.object
+                    me = obj.data
+                    bm = bmesh.from_edit_mesh(me)
+                    groupVerts = GetGroupVerts(obj, bm)
+                    adjInfos = GetAdjInfos(groupVerts)
                     
                 DeselectGroups(groupVerts)
                 LockVertsOnEdge(obj, bm, adjInfos)
@@ -143,6 +150,9 @@ class Edger(bpy.types.Operator):
                 #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
                 #color.s = 1.0
                 #color.h += 0.01
+            else:
+                global isEditMode; isEditMode = False
+            
 
         return {'PASS_THROUGH'}
 
