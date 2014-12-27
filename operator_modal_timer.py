@@ -37,7 +37,6 @@ def GetGroupVerts(obj, bm):
         for g in groupVerts:
             if g in v[deform_layer]:
                 groupVerts[g].append(v)
-                break
     return groupVerts
 
 def AddVertexGroup(name, addSelected = True):
@@ -51,10 +50,11 @@ def DeselectGroups(groupVerts):
         for v in groupVerts[g]:
             v.select = False
             
-def AdjacentVerts(v):    
+def AdjacentVerts(v, exclude = []):    
     adjacent = []
     for e in v.link_edges:
-        adjacent.append(e.other_vert(v))
+        if e.other_vert(v) not in exclude:
+            adjacent.append(e.other_vert(v))
     return adjacent
 
 def AdjCollinearVertsWith(v):
@@ -73,9 +73,10 @@ def GetAdjInfos(groupVerts):
     adjInfos = []
     for g in groupVerts:
         for v in groupVerts[g]:
-            adjColl = AdjCollinearVertsWith(v)
-            if len(adjColl) is 2:
-                aifv = AdjInfoForVertex(v, adjColl[0], adjColl[1])
+            adj = AdjacentVerts(v, groupVerts[g])
+            #adjColl = AdjCollinearVertsWith(v)
+            if len(adj) is 2:
+                aifv = AdjInfoForVertex(v, adj[0], adj[1])
                 adjInfos.append(aifv)
     return adjInfos
 
