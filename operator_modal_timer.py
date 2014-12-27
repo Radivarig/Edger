@@ -1,7 +1,6 @@
 import bpy
 import bmesh
 import mathutils
-import itertools
 
 bl_info = {
     "name": "Edger",
@@ -14,7 +13,6 @@ bl_info = {
     "category": "Object"
 }
 
-#TODO HIGH PRIORITY cross verts have ununique ajacent commplanars => causes mesh to collapse 
 #TODO moving and canceling with RMB spawns shadows
 #TODO update BMesh when it changes like switching to obj mode and back
 #TODO continue modal when another operator is active
@@ -56,25 +54,12 @@ def AdjacentVerts(v, exclude = []):
         if e.other_vert(v) not in exclude:
             adjacent.append(e.other_vert(v))
     return adjacent
-
-def AdjCollinearVertsWith(v):
-    adjacent = AdjacentVerts(v)
-    subsets = SubsetsOf(adjacent, 2)
-    for sub in subsets:
-        if AreVertsCollinear(v, sub[0], sub[1]):
-            return [sub[0], sub[1]]
-    return []
-
-#TODO check if this is repeating combinations, if yes divide by 
-def SubsetsOf(S, m):
-    return set(itertools.combinations(S, m))
         
 def GetAdjInfos(groupVerts):
     adjInfos = []
     for g in groupVerts:
         for v in groupVerts[g]:
             adj = AdjacentVerts(v, groupVerts[g])
-            #adjColl = AdjCollinearVertsWith(v)
             if len(adj) is 2:
                 aifv = AdjInfoForVertex(v, adj[0], adj[1])
                 adjInfos.append(aifv)
@@ -91,20 +76,9 @@ class EdgerFunc1(bpy.types.Operator):
         AddVertexGroup("_edger_")
         #DeselectGroups()
         
-        #for i in adjInfos:
-        #    i.LockTargetOnEdge()
-                
         #me.update()
         return {'FINISHED'}
-
-#TODO calculate over slope so it is scale independant
-def AreVertsCollinear(a, b, c, allowedError = 0.05):
-    area = mathutils.geometry.area_tri(a.co, b.co, c.co)
-    # print(area)
-    if abs(area) <= allowedError:
-        return True
-    return False
-
+    
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
         self.target = target;
