@@ -5,7 +5,7 @@ import mathutils
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 1),
+    "version": (0, 2, 2),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -111,7 +111,7 @@ def ReInit():
     groupVerts = GetGroupVerts(obj, bm)
     adjInfos = GetAdjInfos(groupVerts)
 
-#has to be global to sustain adjInfos through modal calls
+#has to be global to sustain adjInfos between modal calls :'( sorry global haters )':
 isEditMode = False
 obj = bpy.context.object
 me, bm = None, None
