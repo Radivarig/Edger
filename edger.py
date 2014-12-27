@@ -5,7 +5,7 @@ import mathutils
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 1, 2),
+    "version": (0, 2, 0),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
