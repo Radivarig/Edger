@@ -102,6 +102,9 @@ def GetGroupIndexByName(name):
     except: return -1 
 
 def draw_callback_px(self, context):
+    if context.scene.isEdgerDebugActive is False:
+        return
+    
     context.area.tag_redraw()
     
     #sort all groups by adjacent
@@ -160,6 +163,9 @@ if obj is not None:
         
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
     name="Active", description="Toggle if Edger is active", default=False)
+bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(
+    name="Draw", description="Toggle if edge loops and unselectables should be drawn", default=False)
+
 
 class LockEdgeLoop(bpy.types.Operator):
     """Lock this edge loop as if it was on flat surface"""
@@ -279,6 +285,9 @@ class EdgerPanel(bpy.types.Panel):
         layout = self.layout
         row = layout.row()
         row.prop(context.scene, 'isEdgerActive')
+        row = layout.row()
+        row.prop(context.scene, 'isEdgerDebugActive')
+        
         #row = layout.row()
         #row.label(text="Select Edge Loop:")
         split = layout.split()
