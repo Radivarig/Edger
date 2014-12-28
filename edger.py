@@ -36,11 +36,11 @@ def GetGroupVerts(obj, bm):
                     groupVerts[g].append(v)
     return groupVerts
 
-def AddVertexGroup(name, addSelected = True):
+def AddNewVertexGroup(name):
     #TODO make check if selected are already part of _edger_ group
-    bpy.context.scene.objects.active.vertex_groups.new(name)
-    
-    return
+    try: bpy.context.object.vertex_groups[groupName]
+    except: return bpy.context.object.vertex_groups.new(name)
+    return None
 
 def DeselectGroups(groupVerts):
     for g in groupVerts:
@@ -106,7 +106,63 @@ adjInfos = []
 if obj is not None:
     if obj.mode == "EDIT":
         ReInit()
+        
+bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
+    name="Active", description="Toggle if Edger is active", default=False)
 
+def AddSelectedToGroupIndex(bm, gi):
+    deform_layer = bm.verts.layers.deform.active
+    if deform_layer is None: 
+        deform_layer = bm.verts.layers.deform.new()
+    for v in bm.verts:
+        if v.select is True:
+            v[deform_layer][gi] = 1     #set weight to 1 as usual default
+
+def GetGroupIndexByName(name):
+    try: return bpy.context.object.vertex_groups[name].index
+    except: return -1 
+
+class LockEdgeLoop(bpy.types.Operator):
+    """Lock this edge loop as if it was on flat surface"""
+    bl_idname = "wm.lock_edge_loop_idname"
+    bl_label = "LockEdgeLoop_label"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    
+    def execute(self, context):
+        obj = context.object
+        me = obj.data
+        bm = bmesh.from_edit_mesh(me)
+        
+        name = "_edger_"
+        counter = 0
+        
+        while GetGroupIndexByName(name + "." + str(counter)) >= 0:
+            counter += 1
+        gi = AddNewVertexGroup(name + "." + str(counter)).index
+        AddSelectedToGroupIndex(bm, gi)
+        ReInit()
+        
+        return {'FINISHED'}
+
+class UnselectableVertices(bpy.types.Operator):
+    """Make selected vertices unselectable"""
+    bl_idname = "wm.unselectable_vertices_idname"
+    bl_label = "unselectable_vertices_label"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    
+    def execute(self, context):
+        global obj, me, bm
+        name = "_unselectable_"
+        gi = GetGroupIndexByName(name)
+        if gi < 0:
+            gi = AddNewVertexGroup(name).index
+            AddSelectedToGroupIndex(bm, gi)
+
+        return {'FINISHED'}
+    
+'''
 class EdgerFunc1(bpy.types.Operator):
     """EdgerFunc1"""
     bl_idname = "wm.edger_func1_idname"
@@ -115,12 +171,9 @@ class EdgerFunc1(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
-        AddVertexGroup("_edger_")
-        #DeselectGroups()
-        
-        #me.update()
+      
         return {'FINISHED'}
-
+'''
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -135,7 +188,8 @@ class Edger(bpy.types.Operator):
             return self.cancel(context)
         
         if event.type == 'TIMER':
-            if context.object is None:
+            if context.object is None or \
+               context.scene.isEdgerActive is False:
                 return {'PASS_THROUGH'}
             
             if context.object.mode == "EDIT":
@@ -180,13 +234,15 @@ class EdgerPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         row = layout.row()
-        row.label(text="Select Edge Loop:")
+        row.prop(context.scene, 'isEdgerActive')
+        #row = layout.row()
+        #row.label(text="Select Edge Loop:")
         split = layout.split()
         col = split.column(align=True)
-        col.operator(Edger.bl_idname, text="Start Edger", icon = "GROUP_VERTEX")
-        col.operator(EdgerFunc1.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
+        col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
+        col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
         row = layout.row()
-        row.label(text="bla bla bla:")
+        #row.label(text="bla bla bla:")
         
 #handle the keymap
 #wm = bpy.context.window_manager
@@ -196,12 +252,16 @@ class EdgerPanel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(Edger)
-    bpy.utils.register_class(EdgerFunc1)
+    #bpy.utils.register_class(EdgerFunc1)
+    bpy.utils.register_class(LockEdgeLoop)
+    bpy.utils.register_class(UnselectableVertices)
     bpy.utils.register_class(EdgerPanel)
 
 def unregister():
     bpy.utils.unregister_class(Edger)
-    bpy.utils.unregister_class(EdgerFunc1)
+    #bpy.utils.unregister_class(EdgerFunc1)
+    bpy.utils.unregister_class(LockEdgeLoop)
+    bpy.utils.unregister_class(UnselectableVertices)
     bpy.utils.unregister_class(EdgerPanel)
 
 
