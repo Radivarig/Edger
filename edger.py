@@ -45,10 +45,8 @@ def AddNewVertexGroup(name):
 def DeselectGroups(groupVerts):
     for g in groupVerts:
         for v in groupVerts[g]:
-            try:
-                v.select = False
-            except:
-                ReInit()
+            try: v.select = False
+            except: ReInit()
                 
 def AdjacentVerts(v, exclude = []):    
     adjacent = []
@@ -158,7 +156,7 @@ class UnselectableVertices(bpy.types.Operator):
         gi = GetGroupIndexByName(name)
         if gi < 0:
             gi = AddNewVertexGroup(name).index
-            AddSelectedToGroupIndex(bm, gi)
+        AddSelectedToGroupIndex(bm, gi)
 
         return {'FINISHED'}
     
