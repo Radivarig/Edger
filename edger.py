@@ -2,6 +2,8 @@ import bpy
 import bmesh
 import mathutils
 from fractions import Fraction
+import bgl
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 bl_info = {
     "name": "Edger",
@@ -98,7 +100,44 @@ def AddSelectedToGroupIndex(bm, gi):
 def GetGroupIndexByName(name):
     try: return bpy.context.object.vertex_groups[name].index
     except: return -1 
+
+def draw_callback_px(self, context):
+    context.area.tag_redraw()
     
+    #sort all groups by adjacent
+    verts2d = []
+    for v in bm.verts:
+        new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
+        verts2d.append([new2dCo.x,new2dCo.y])
+        
+    #draw unselectables
+    DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
+    DrawByVertices("lines", verts2d, [0.5, 0.1, 0.1, 0.5])
+    
+def DrawByVertices(mode, verts2d, color):
+    bgl.glColor4f(*color)
+    
+    bgl.glEnable(bgl.GL_BLEND)
+    
+    if mode is "points":
+        bgl.glPointSize(5)
+        bgl.glBegin(bgl.GL_POINTS)
+            
+    elif mode is "lines":
+        bgl.glLineWidth(2)
+        bgl.glBegin(bgl.GL_LINE_LOOP)
+    
+    for x, y in verts2d:
+        bgl.glVertex2f(x, y)
+
+    bgl.glEnd()
+    bgl.glDisable(bgl.GL_BLEND)
+    #restore defaults
+    bgl.glLineWidth(1)
+    bgl.glColor4f(0.0, 0.0, 0.0, 1.0)
+
+    return
+
 #INIT
 def ReInit():
     global obj, me, bm
@@ -216,11 +255,16 @@ class Edger(bpy.types.Operator):
 
     def execute(self, context):
         self._timer = context.window_manager.event_timer_add(0.1, context.window)
+        
+        args = (self, context)
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
+
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
         context.window_manager.event_timer_remove(self._timer)
+        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         return {'CANCELLED'}
 
 #addon_keymaps = []
