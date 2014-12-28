@@ -1,11 +1,12 @@
 import bpy
 import bmesh
 import mathutils
+from fractions import Fraction
 
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 2),
+    "version": (0, 2, 3),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -67,19 +68,19 @@ def GetAdjInfos(groupVerts):
     
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
-        self.target = target;
-        self.end1 = end1;
-        self.end2 = end2;
-        self.UpdateRatio();
+        self.target = target
+        self.end1 = end1
+        self.end2 = end2
+        self.UpdateRatio()
 
     def UpdateRatio(self):
         end1ToTarget = (self.end1.co -self.target.co).length
         end1ToEnd2 = (self.end1.co -self.end2.co).length
-        self.ratio = end1ToTarget/end1ToEnd2; #0 is end1, 1 is end2
-    
+        self.ratioToEnd1 = end1ToTarget/end1ToEnd2; #0 is end1, 1 is end2
+       
     def LockTargetOnEdge(self):
         # c = a + r(b -a)
-        self.target.co = self.end1.co + self.ratio*(self.end2.co - self.end1.co)
+        self.target.co = self.end1.co +self.ratioToEnd1*(self.end2.co -self.end1.co)
 
 def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
