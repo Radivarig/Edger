@@ -8,7 +8,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 4),
+    "version": (0, 2, 5),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
