@@ -6,7 +6,7 @@ from fractions import Fraction
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 3),
+    "version": (0, 2, 4),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -14,8 +14,9 @@ bl_info = {
     "category": "Object"
 }
 
+#TODO change from groupVerts[group.index] to groupVerts[group] for consistency
 #TODO moving and canceling with RMB spawns shadows
-#TODO update vertex_groups on ReInit() 
+#TODO update vertex_groups on ReInit(), delete empty 
 #TODO buttons: deselect groups toggle, add to new group, create object without groups, 
 #TODO remove empty groups
 #TODO detect and remove from groups button
@@ -183,8 +184,8 @@ class Edger(bpy.types.Operator):
     _timer = None
     
     def modal(self, context, event):
-        if event.type == 'ESC':
-            return self.cancel(context)
+        #if event.type == 'ESC':
+        #    return self.cancel(context)
         
         if event.type == 'TIMER':
             if context.object is None or \
