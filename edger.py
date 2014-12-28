@@ -86,6 +86,18 @@ class AdjInfoForVertex(object):
 def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
+        
+def AddSelectedToGroupIndex(bm, gi):
+    deform_layer = bm.verts.layers.deform.active
+    if deform_layer is None: 
+        deform_layer = bm.verts.layers.deform.new()
+    for v in bm.verts:
+        if v.select is True:
+            v[deform_layer][gi] = 1     #set weight to 1 as usual default
+
+def GetGroupIndexByName(name):
+    try: return bpy.context.object.vertex_groups[name].index
+    except: return -1 
     
 #INIT
 def ReInit():
@@ -109,18 +121,6 @@ if obj is not None:
         
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
     name="Active", description="Toggle if Edger is active", default=False)
-
-def AddSelectedToGroupIndex(bm, gi):
-    deform_layer = bm.verts.layers.deform.active
-    if deform_layer is None: 
-        deform_layer = bm.verts.layers.deform.new()
-    for v in bm.verts:
-        if v.select is True:
-            v[deform_layer][gi] = 1     #set weight to 1 as usual default
-
-def GetGroupIndexByName(name):
-    try: return bpy.context.object.vertex_groups[name].index
-    except: return -1 
 
 class LockEdgeLoop(bpy.types.Operator):
     """Lock this edge loop as if it was on flat surface"""
@@ -263,7 +263,6 @@ def unregister():
     bpy.utils.unregister_class(LockEdgeLoop)
     bpy.utils.unregister_class(UnselectableVertices)
     bpy.utils.unregister_class(EdgerPanel)
-
 
 if __name__ == "__main__":
     register()
