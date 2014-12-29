@@ -8,7 +8,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 5),
+    "version": (0, 2, 6),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -16,7 +16,7 @@ bl_info = {
     "category": "Object"
 }
 
-#TODO on button "lock edge loops" undo, unactivate, lock, activate
+#TODO on button "lock edge loops": deselectAll; spawn warrning "edger is deactivated, reselect and click again"
 #TODO moving and canceling with RMB spawns shadows
 #TODO button create object without groups, 
 #TODO detect and remove from groups button
@@ -218,7 +218,6 @@ bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(
     name="Draw", description="Toggle if edge loops and unselectables should be drawn", default=False)
 
-
 class LockEdgeLoop(bpy.types.Operator):
     """Lock this edge loop as if it was on flat surface"""
     bl_idname = "wm.lock_edge_loop_idname"
@@ -238,6 +237,7 @@ class LockEdgeLoop(bpy.types.Operator):
             counter += 1
         gi = AddNewVertexGroup(name + "." + str(counter)).index
         AddSelectedToGroupIndex(bm, gi)
+        #this deleted new group if it was empty
         ReInit()
         
         return {'FINISHED'}
