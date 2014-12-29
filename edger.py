@@ -16,7 +16,9 @@ bl_info = {
     "category": "Object"
 }
 
-#TODO on button "lock edge loops": deselectAll; spawn warrning "edger is deactivated, reselect and click again"
+#TODO duplicating object causes wrong object draw, make global var update
+#TODO reinit on history change
+#TODO try alt rmb shortcut to deactivate so verts dont deselect
 #TODO moving and canceling with RMB spawns shadows
 #TODO button create object without groups, 
 #TODO detect and remove from groups button
@@ -37,7 +39,7 @@ def GetGroupVerts(obj, bm):
         for v in bm.verts:
             for g in groupVerts:
                 if g.index in v[deform_layer]:
-                    #if v not in l:
+                    #if v not in groupVerts[g]:
                     groupVerts[g].append(v)
         
         for g in groupVerts:
@@ -61,7 +63,7 @@ def AddNewVertexGroup(name):
     try: bpy.context.object.vertex_groups[groupName]
     except: return bpy.context.object.vertex_groups.new(name)
     return None
-
+    
 def DeselectGroups(groupVerts):
     for g in groupVerts:
         for v in groupVerts[g]:
@@ -193,10 +195,12 @@ def DrawByVertices(mode, verts2d, color):
     return
 
 #INIT
-def ReInit():
+def ReInit(context = None):
     global obj, me, bm
     global groupVerts, adjInfos
     obj = bpy.context.object
+    if context is not None:
+        obj = context.object
     me = obj.data
     bm = bmesh.from_edit_mesh(me)
     groupVerts = GetGroupVerts(obj, bm)
@@ -258,6 +262,60 @@ class UnselectableVertices(bpy.types.Operator):
         AddSelectedToGroupIndex(bm, gi)
 
         return {'FINISHED'}
+
+'''
+def DeselectAll(bm):
+    for f in bm.faces:
+        f.select = False
+'''
+def MakeSelectedOnlyVertsInGroup(bm, g):
+    deform_layer = bm.verts.layers.deform.active
+    if deform_layer is None:
+        deform_layer = bm.verts.layers.deform.new()
+    
+    for f in bm.faces:
+        f.select = False
+        for v in f.verts:
+            if g.index in v[deform_layer]:
+                v.select = True
+    
+class ClearEdgerLoops(bpy.types.Operator):
+    """Create duplicate of object and remove _edger_ vertexGroups and delete their Edge Loops"""
+    bl_idname = "wm.clear_edger_oops_idname"
+    bl_label = "clear_edger_oops__label"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    
+    def execute(self, context):
+        
+        #ReInit(context)
+        global obj, me, bm
+        global groupVerts
+        
+        #bpy.ops.mesh.delete_edgeloop()
+        #wasActive = context.scene.isEdgerActive
+        #TODO reactivate at end
+        context.scene.isEdgerActive = False
+
+        groups = []
+        for g in obj.vertex_groups:
+            if g.name.startswith("_edger_"):
+                #groups.append(g)
+                MakeSelectedOnlyVertsInGroup(bm, g)
+                #TODO this doesn't work for some reason
+                #bpy.ops.mesh.delete_edgeloop()
+                #bm.to_mesh(me)
+                #bm.free()
+                
+                #me.update()
+                break
+        bm = bmesh.from_edit_mesh(me)
+        
+        #DeleteGroups(obj, groups)
+        ReInit(context)
+                    
+        
+        return {'FINISHED'}
     
 '''
 class EdgerFunc1(bpy.types.Operator):
@@ -290,20 +348,22 @@ class Edger(bpy.types.Operator):
             
             if context.object.mode == "EDIT":
                 global isEditMode
-                global obj, me, bm
+                obj = context.object
+                me = obj.data
+                bm = bmesh.from_edit_mesh(me)
                 global groupVerts, adjInfos
                 
                 if isEditMode is False:
                     isEditMode = True
                     ReInit()
+                
+                me.update()
                     
                 if context.scene.isEdgerActive is False:
                     return {'PASS_THROUGH'}
                     
                 DeselectGroups(groupVerts)
                 LockVertsOnEdge(adjInfos)
-                
-                me.update()
                                 
                 # change theme color, silly!
                 #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
@@ -349,6 +409,7 @@ class EdgerPanel(bpy.types.Panel):
         col = split.column(align=True)
         col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
         col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
+        col.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
         row = layout.row()
         #row.label(text="bla bla bla:")
         
@@ -362,6 +423,7 @@ def register():
     bpy.utils.register_class(Edger)
     #bpy.utils.register_class(EdgerFunc1)
     bpy.utils.register_class(LockEdgeLoop)
+    bpy.utils.register_class(ClearEdgerLoops)
     bpy.utils.register_class(UnselectableVertices)
     bpy.utils.register_class(EdgerPanel)
 
@@ -369,6 +431,7 @@ def unregister():
     bpy.utils.unregister_class(Edger)
     #bpy.utils.unregister_class(EdgerFunc1)
     bpy.utils.unregister_class(LockEdgeLoop)
+    bpy.utils.unregister_class(ClearEdgerLoops)
     bpy.utils.unregister_class(UnselectableVertices)
     bpy.utils.unregister_class(EdgerPanel)
 
