@@ -285,8 +285,7 @@ class Edger(bpy.types.Operator):
         #    return self.cancel(context)
         
         if event.type == 'TIMER':
-            if context.object is None or \
-               context.scene.isEdgerActive is False:
+            if context.object is None:
                 return {'PASS_THROUGH'}
             
             if context.object.mode == "EDIT":
@@ -297,6 +296,10 @@ class Edger(bpy.types.Operator):
                 if isEditMode is False:
                     isEditMode = True
                     ReInit()
+                    
+                if context.scene.isEdgerActive is False:
+                    return {'PASS_THROUGH'}
+                    
                 DeselectGroups(groupVerts)
                 LockVertsOnEdge(adjInfos)
                 
