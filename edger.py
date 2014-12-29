@@ -108,15 +108,45 @@ def draw_callback_px(self, context):
     context.area.tag_redraw()
     
     #sort all groups by adjacent
-    verts2d = []
+    '''verts2d = []
     for v in bm.verts:
         new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
         verts2d.append([new2dCo.x,new2dCo.y])
-        
+       '''
+ 
     #draw unselectables
-    DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
-    DrawByVertices("lines", verts2d, [0.5, 0.1, 0.1, 0.5])
-    
+    #DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
+    for g in groupVerts:
+        verts2d = []
+        for v in groupVerts[g]:
+            new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
+            verts2d.append([new2dCo.x,new2dCo.y])
+        DrawByVertices("lines", verts2d, [0.5, 0.1, 0.1, 0.5])
+
+def SortGroupVertsByAdjacent(groupVerts):
+    for gi in groupVerts:
+        ordered = []
+        ordered.append(groupVerts[gi].pop(0))
+        while len(groupVerts[gi]) > 0:
+            a = NextAdjacentInLoop(ordered[len(ordered)-1], groupVerts[gi])
+            if a is not None:
+                ordered.append(a)
+                groupVerts[gi].remove(a)
+                continue
+            #TODO that means loop group isn't a loop and contains disconnected verts, debug this to user!
+            break
+        if len(groupVerts[gi]) is 0:
+            groupVerts[gi] = ordered            
+        else:
+            #debug to user
+            groupVerts[gi] = ordered + groupVerts[gi]
+        
+def NextAdjacentInLoop(v, loopVerts):
+    for e in v.link_edges:
+        if e.other_vert(v) in loopVerts:
+            return e.other_vert(v)
+    return None
+
 def DrawByVertices(mode, verts2d, color):
     bgl.glColor4f(*color)
     
@@ -149,6 +179,7 @@ def ReInit():
     me = obj.data
     bm = bmesh.from_edit_mesh(me)
     groupVerts = GetGroupVerts(obj, bm)
+    SortGroupVertsByAdjacent(groupVerts)
     adjInfos = GetAdjInfos(groupVerts)
 
 #has to be global to sustain adjInfos between modal calls :'( sorry global haters )':
