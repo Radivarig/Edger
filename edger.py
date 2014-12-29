@@ -16,11 +16,9 @@ bl_info = {
     "category": "Object"
 }
 
-#TODO change from groupVerts[group.index] to groupVerts[group] for consistency
+#TODO on button "lock edge loops" undo, unactivate, lock, activate
 #TODO moving and canceling with RMB spawns shadows
-#TODO update vertex_groups on ReInit(), delete empty 
-#TODO buttons: deselect groups toggle, add to new group, create object without groups, 
-#TODO remove empty groups
+#TODO button create object without groups, 
 #TODO detect and remove from groups button
 
 def GetGroupVerts(obj, bm):
@@ -28,17 +26,35 @@ def GetGroupVerts(obj, bm):
     if obj and bm:
         for g in obj.vertex_groups:
             if g.name.startswith("_edger_"):
-                groupVerts[g.index] = []
+                groupVerts[g] = []
         
         deform_layer = bm.verts.layers.deform.active
         if deform_layer is None: 
             deform_layer = bm.verts.layers.deform.new()
         
+        deletion = []
+        
         for v in bm.verts:
             for g in groupVerts:
-                if g in v[deform_layer]:
+                if g.index in v[deform_layer]:
+                    #if v not in l:
                     groupVerts[g].append(v)
+        
+        for g in groupVerts:
+            if len(groupVerts[g]) is 0:
+                deletion.append(g)
+        
+        #delete empty
+        groupVerts = {k: v for k, v in groupVerts.items() if len(v) is not 0}
+        DeleteGroups(obj, deletion)
+            
     return groupVerts
+
+def DeleteGroups(obj, groups):
+    for g in groups: DeleteGroup(obj, g)
+
+def DeleteGroup(obj, g):
+    obj.vertex_groups.remove(g)    
 
 def AddNewVertexGroup(name):
     #TODO make check if selected are already part of _edger_ group
@@ -119,27 +135,32 @@ def draw_callback_px(self, context):
     for g in groupVerts:
         verts2d = []
         for v in groupVerts[g]:
-            new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
-            verts2d.append([new2dCo.x,new2dCo.y])
+            try:
+                new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
+                verts2d.append([new2dCo.x,new2dCo.y])
+            except:
+                #TODO this happens when running as script and not as addon since multiple registered instances exist, qfix:restart blender 
+                continue
         DrawByVertices("lines", verts2d, [0.5, 0.1, 0.1, 0.5])
 
 def SortGroupVertsByAdjacent(groupVerts):
-    for gi in groupVerts:
+    for g in groupVerts:
         ordered = []
-        ordered.append(groupVerts[gi].pop(0))
-        while len(groupVerts[gi]) > 0:
-            a = NextAdjacentInLoop(ordered[len(ordered)-1], groupVerts[gi])
+        #GetGroupVerts removes empty so len(groupVerts[g]) always >0
+        ordered.append(groupVerts[g].pop(0))
+        while len(groupVerts[g]) > 0:
+            a = NextAdjacentInLoop(ordered[len(ordered)-1], groupVerts[g])
             if a is not None:
                 ordered.append(a)
-                groupVerts[gi].remove(a)
+                groupVerts[g].remove(a)
                 continue
             #TODO that means loop group isn't a loop and contains disconnected verts, debug this to user!
             break
-        if len(groupVerts[gi]) is 0:
-            groupVerts[gi] = ordered            
+        if len(groupVerts[g]) is 0:
+            groupVerts[g] = ordered            
         else:
-            #debug to user
-            groupVerts[gi] = ordered + groupVerts[gi]
+            #TODO debug to user, maybe remove verts from group so it gets deleted from GetGroupVerts (?)
+            groupVerts[g] = ordered + groupVerts[g]
         
 def NextAdjacentInLoop(v, loopVerts):
     for e in v.link_edges:
@@ -280,7 +301,7 @@ class Edger(bpy.types.Operator):
                 LockVertsOnEdge(adjInfos)
                 
                 me.update()
-                
+                                
                 # change theme color, silly!
                 #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
                 #color.s = 1.0
