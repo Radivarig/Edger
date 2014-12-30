@@ -32,9 +32,7 @@ def GetGroupVerts(obj, bm):
             if g.name.startswith("_edger_"):
                 groupVerts[g] = []
         
-        deform_layer = bm.verts.layers.deform.active
-        if deform_layer is None: 
-            deform_layer = bm.verts.layers.deform.new()
+        deform_layer = GetDeformLayer(bm)
         
         deletion = []
         
@@ -108,13 +106,19 @@ class AdjInfoForVertex(object):
 def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
-
-def AddSelectedToGroup(bm, g):
+        
+def GetDeformLayer(bm):
     deform_layer = bm.verts.layers.deform.active
     if deform_layer is None: 
-        deform_layer = bm.verts.layers.deform.new()
+        return bm.verts.layers.deform.new()
+    return deform_layer
+     
+def RemoveVertsFromGroup(bm, verts, group):
+    deform_layer = GetDeformLayer(bm)
     
-   for v in bm.verts:
+def AddSelectedToGroup(bm, g):
+    deform_layer = GetDeformLayer(bm)
+    for v in bm.verts:
         if v.select is True:
             v[deform_layer][g.index] = 1     #set weight to 1 as usual default
 
@@ -267,10 +271,7 @@ def DeselectAll(bm):
         f.select = False
 '''
 def MakeSelectedOnlyVertsInGroup(bm, g):
-    deform_layer = bm.verts.layers.deform.active
-    if deform_layer is None:
-        deform_layer = bm.verts.layers.deform.new()
-    
+    deform_layer = GetDeformLayer(bm)
     for f in bm.faces:
         f.select = False
         for v in f.verts:
