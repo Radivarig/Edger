@@ -284,34 +284,24 @@ class ClearEdgerLoops(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
-        
-        #ReInit(context)
         global obj, me, bm
         global groupVerts
         
-        #bpy.ops.mesh.delete_edgeloop()
-        #wasActive = context.scene.isEdgerActive
         #TODO reactivate at end
         context.scene.isEdgerActive = False
 
         groups = []
         for g in obj.vertex_groups:
             if g.name.startswith("_edger_"):
-                #groups.append(g)
-                MakeSelectedOnlyVertsInGroup(bm, g)
-                #TODO this doesn't work for some reason
-                #bpy.ops.mesh.delete_edgeloop()
-                #bm.to_mesh(me)
-                #bm.free()
-                
-                #me.update()
-                break
-        bm = bmesh.from_edit_mesh(me)
+                groups.append(g)
+        for g in groups:
+            MakeSelectedOnlyVertsInGroup(bm, g)
+            bpy.ops.object.mode_set(mode = 'OBJECT') 
+            bpy.ops.object.mode_set(mode = 'EDIT') 
+            bpy.ops.mesh.delete_edgeloop()
+            ReInit(context)                    
         
-        #DeleteGroups(obj, groups)
-        ReInit(context)
-                    
-        
+        #once empty groups will be automatically deleted
         return {'FINISHED'}
     
 '''
