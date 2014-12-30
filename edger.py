@@ -16,7 +16,9 @@ bl_info = {
     "category": "Object"
 }
 
-#TODO duplicating object causes wrong object draw, make global var update
+#TODO when groups are added/deleted ReInit
+#TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign
+#TODO duplicating object causes wrong object draw, fix global variable updating
 #TODO reinit on history change
 #TODO try alt rmb shortcut to deactivate so verts dont deselect
 #TODO moving and canceling with RMB spawns shadows
@@ -124,16 +126,11 @@ def draw_callback_px(self, context):
         return
     
     context.area.tag_redraw()
-    
-    #sort all groups by adjacent
-    '''verts2d = []
-    for v in bm.verts:
-        new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
-        verts2d.append([new2dCo.x,new2dCo.y])
-       '''
- 
+     
     #draw unselectables
+    #verts2d = from group _unselectable_
     #DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
+    
     for g in groupVerts:
         verts2d = []
         for v in groupVerts[g]:
