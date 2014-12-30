@@ -275,6 +275,11 @@ def MakeSelectedOnlyVertsInGroup(bm, g):
         for v in f.verts:
             if g.index in v[deform_layer]:
                 v.select = True
+
+def DuplicateObject():
+    bpy.ops.object.mode_set(mode = 'OBJECT') 
+    bpy.ops.object.duplicate_move()
+    bpy.ops.object.mode_set(mode = 'EDIT') 
     
 class ClearEdgerLoops(bpy.types.Operator):
     """Create duplicate of object and remove _edger_ vertexGroups and delete their Edge Loops"""
@@ -284,10 +289,11 @@ class ClearEdgerLoops(bpy.types.Operator):
     bl_region_type = 'TOOLS'
     
     def execute(self, context):
+        DuplicateObject()
+        ReInit()
         global obj, me, bm
         global groupVerts
         
-        #TODO reactivate at end
         context.scene.isEdgerActive = False
 
         groups = []
