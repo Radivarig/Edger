@@ -108,18 +108,19 @@ class AdjInfoForVertex(object):
 def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
-        
-def AddSelectedToGroupIndex(bm, gi):
+
+def AddSelectedToGroup(bm, g):
     deform_layer = bm.verts.layers.deform.active
     if deform_layer is None: 
         deform_layer = bm.verts.layers.deform.new()
-    for v in bm.verts:
+    
+   for v in bm.verts:
         if v.select is True:
-            v[deform_layer][gi] = 1     #set weight to 1 as usual default
+            v[deform_layer][g.index] = 1     #set weight to 1 as usual default
 
-def GetGroupIndexByName(name):
-    try: return bpy.context.object.vertex_groups[name].index
-    except: return -1 
+def GetGroupByName(name):
+    try: return bpy.context.object.vertex_groups[name]
+    except: return None
 
 def draw_callback_px(self, context):
     if context.scene.isEdgerDebugActive is False:
@@ -208,7 +209,7 @@ def ReInit(context = None):
 isEditMode = False
 obj = bpy.context.object
 me, bm = None, None
-groupVerts = {}     #dict[g.index] = [list, of, vertices]
+groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
 if obj is not None:
     if obj.mode == "EDIT":
@@ -234,10 +235,10 @@ class LockEdgeLoop(bpy.types.Operator):
         name = "_edger_"
         counter = 0
         
-        while GetGroupIndexByName(name + "." + str(counter)) >= 0:
+        while GetGroupByName(name + "." + str(counter)) is not None:
             counter += 1
-        gi = AddNewVertexGroup(name + "." + str(counter)).index
-        AddSelectedToGroupIndex(bm, gi)
+        g = AddNewVertexGroup(name + "." + str(counter))
+        AddSelectedToGroup(bm, g)
         #this deleted new group if it was empty
         ReInit()
         
@@ -253,10 +254,10 @@ class UnselectableVertices(bpy.types.Operator):
     def execute(self, context):
         global obj, me, bm
         name = "_unselectable_"
-        gi = GetGroupIndexByName(name)
-        if gi < 0:
-            gi = AddNewVertexGroup(name).index
-        AddSelectedToGroupIndex(bm, gi)
+        g = GetGroupByName(name)
+        if g is not None:
+            g = AddNewVertexGroup(name)
+        AddSelectedToGroup(bm, g)
 
         return {'FINISHED'}
 
