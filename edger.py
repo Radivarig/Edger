@@ -7,7 +7,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 7),
+    "version": (0, 2, 71),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -64,13 +64,26 @@ def AddNewVertexGroup(name):
     try: bpy.context.object.vertex_groups[groupName]
     except: return bpy.context.object.vertex_groups.new(name)
     return None
-    
+
+'''
 def DeselectGroups(groupVerts):
     for g in groupVerts:
         for v in groupVerts[g]:
             try: v.select = False
             except: ReInit()
-                
+'''
+
+#def DeselectGroupsSelectCloser(adjInfos):
+def DeselectGroups(adjInfos):
+    for i in adjInfos:
+        try: 
+            if i.target.select is True:            
+                i.target.select = False
+                if i.ratioToEnd1 < 0.5:
+                    i.end1.select = True
+                else: i.end2.select = True
+        except: ReInit()
+
 def AdjacentVerts(v, exclude = []):    
     adjacent = []
     for e in v.link_edges:
@@ -361,7 +374,7 @@ class Edger(bpy.types.Operator):
                 if context.scene.isEdgerActive is False:
                     return {'PASS_THROUGH'}
                     
-                DeselectGroups(groupVerts)
+                DeselectGroups(adjInfos)
                 LockVertsOnEdge(adjInfos)
                                 
                 # change theme color, silly!
