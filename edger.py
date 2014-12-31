@@ -1,7 +1,6 @@
 import bpy
 import bmesh
 import mathutils
-from fractions import Fraction
 import bgl
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 
@@ -16,6 +15,9 @@ bl_info = {
     "category": "Object"
 }
 
+
+#TODO check if passing context instead of bpy.context is neccessery
+#TODO if _edger_group vert is selected, select its closer edge afte deselecting
 #TODO when groups are added/deleted ReInit
 #TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign
 #TODO duplicating object causes wrong object draw, fix global variable updating
