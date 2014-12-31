@@ -15,7 +15,6 @@ bl_info = {
     "category": "Object"
 }
 
-
 #TODO check if passing context instead of bpy.context is neccessery
 #TODO if _edger_group vert is selected, select its closer edge afte deselecting
 #TODO when groups are added/deleted ReInit
@@ -132,8 +131,9 @@ def draw_callback_px(self, context):
     if context.scene.isEdgerDebugActive is False:
         return
     
+    obj = context.object
     context.area.tag_redraw()
-     
+    
     #draw unselectables
     #verts2d = from group _unselectable_
     #DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
@@ -142,7 +142,9 @@ def draw_callback_px(self, context):
         verts2d = []
         for v in groupVerts[g]:
             try:
-                new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v.co)
+                v_worldCo = obj.matrix_world*v.co
+                #v_worldCo = v.co
+                new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v_worldCo)
                 verts2d.append([new2dCo.x,new2dCo.y])
             except:
                 #TODO this happens when running as script and not as addon since multiple registered instances exist, qfix:restart blender 
