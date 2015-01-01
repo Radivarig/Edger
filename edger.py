@@ -12,19 +12,17 @@ bl_info = {
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
 #    "wiki_url": "",
-    "category": "Object"
+    "category": "Mesh"
 }
 
 #TODO check if passing context instead of bpy.context is neccessery
+#TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign just to prevent user modifying
 #TODO if _edger_group vert is selected, select its closer edge afte deselecting
 #TODO when groups are added/deleted ReInit
-#TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign
-#TODO duplicating object causes wrong object draw, fix global variable updating
 #TODO reinit on history change
 #TODO try alt rmb shortcut to deactivate so verts dont deselect
 #TODO moving and canceling with RMB spawns shadows
-#TODO button create object without groups, 
-#TODO detect and remove from groups button
+#TODO detect group from selected and remove via button
 
 def GetGroupVerts(obj, bm):
     groupVerts = {}
@@ -58,7 +56,7 @@ def DeleteGroups(obj, groups):
 
 def DeleteGroup(obj, g):
     obj.vertex_groups.remove(g)    
-
+    
 def AddNewVertexGroup(name):
     #TODO make check if selected are already part of _edger_ group
     try: bpy.context.object.vertex_groups[groupName]
@@ -100,7 +98,7 @@ def GetAdjInfos(groupVerts):
                 aifv = AdjInfoForVertex(v, adj[0], adj[1])
                 adjInfos.append(aifv)
     return adjInfos
-    
+
 class AdjInfoForVertex(object):
     def __init__(self, target, end1, end2):
         self.target = target
@@ -127,9 +125,12 @@ def GetDeformLayer(bm):
         return bm.verts.layers.deform.new()
     return deform_layer
      
-def RemoveVertsFromGroup(bm, verts, group):
+def RemoveVertsFromGroup(bm, verts, g):
+    if g is None: return 
     deform_layer = GetDeformLayer(bm)
-    
+    for v in verts:
+        del v[deform_layer][g.index]
+
 def AddSelectedToGroup(bm, g):
     deform_layer = GetDeformLayer(bm)
     for v in bm.verts:
@@ -222,19 +223,18 @@ def ReInit(context = None):
         obj = context.object
     me = obj.data
     bm = bmesh.from_edit_mesh(me)
+    
+    #compare groupVerts vertices by index and position, if there are external remove them from group
     groupVerts = GetGroupVerts(obj, bm)
     SortGroupVertsByAdjacent(groupVerts)
     adjInfos = GetAdjInfos(groupVerts)
+    #RemoveVertsFromGroup(bm, bm.verts, GetGroupByName("_edger_.0"))
 
 #has to be global to sustain adjInfos between modal calls :'( sorry global haters )':
 isEditMode = False
-obj = bpy.context.object
-me, bm = None, None
+obj, me, bm = None, None, None
 groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
-if obj is not None:
-    if obj.mode == "EDIT":
-        ReInit()
         
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
     name="Active", description="Toggle if Edger is active", default=False)
@@ -260,10 +260,29 @@ class LockEdgeLoop(bpy.types.Operator):
             counter += 1
         g = AddNewVertexGroup(name + "." + str(counter))
         AddSelectedToGroup(bm, g)
-        #this deleted new group if it was empty
+        
+        #fetch new group
+        #newVerts = []
+        #deform_layer = GetDeformLayer(bm)
+        #for v in bm.verts:
+        #    if g.index in v[deform_layer]:
+        #        newVerts.append(v)
+        
+        #RemoveVertsIfSubsetOfOtherGroups(newVerts, bm, groupVerts)
         ReInit()
         
         return {'FINISHED'}
+
+#remove all verts of of_g from all other groups if of_g is their subset 
+def RemoveVertsIfSubsetOfOtherGroups(verts, bm, groupVerts):
+    for g in groupVerts:
+        if DoesListContainsList(groupVerts[g], verts):
+            RemoveVertsFromGroup(bm, verts, g)
+
+def DoesListContainsList(big, small):
+    for s in small:
+        if s not in big: return False
+    return True
 
 class UnselectableVertices(bpy.types.Operator):
     """Make selected vertices unselectable"""
@@ -387,7 +406,7 @@ class Edger(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        self._timer = context.window_manager.event_timer_add(0.1, context.window)
+        self._timer = context.window_manager.event_timer_add(0.03, context.window)
         
         args = (self, context)
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
