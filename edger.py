@@ -438,7 +438,7 @@ class EdgerPanel(bpy.types.Panel):
         #row.label(text="Select Edge Loop:")
         split = layout.split()
         col = split.column(align=True)
-        col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
+        #col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
         col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
         col.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
         row = layout.row()
@@ -450,6 +450,11 @@ class EdgerPanel(bpy.types.Panel):
 #kmi = km.keymap_items.new(UvSquaresByShape.bl_idname, 'E', 'PRESS', alt=True)
 #addon_keymaps.append((km, kmi))
 
+def init_handler(scene):
+    try: bpy.app.handlers.scene_update_pre.remove(init_handler)
+    except: return
+    bpy.ops.wm.edger()
+
 def register():
     bpy.utils.register_class(Edger)
     #bpy.utils.register_class(EdgerFunc1)
@@ -457,6 +462,8 @@ def register():
     bpy.utils.register_class(ClearEdgerLoops)
     bpy.utils.register_class(UnselectableVertices)
     bpy.utils.register_class(EdgerPanel)
+
+    bpy.app.handlers.scene_update_pre.append(init_handler)
 
 def unregister():
     bpy.utils.unregister_class(Edger)
