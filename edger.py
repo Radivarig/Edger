@@ -235,7 +235,8 @@ isEditMode = False
 obj, me, bm = None, None, None
 groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
-        
+
+bpy.types.Scene.isEdgerRunning = False
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
     name="Active", description="Toggle if Edger is active", default=False)
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(
@@ -360,6 +361,32 @@ class EdgerFunc1(bpy.types.Operator):
       
         return {'FINISHED'}
 '''
+
+def RunEdger():
+    try: bpy.utils.register_class(Edger)
+    except: pass
+    bpy.ops.wm.edger()
+    bpy.types.Scene.isEdgerRunning = True
+   
+def StopEdger():
+    try: bpy.types.SpaceView3D.draw_handler_remove(_handle, 'WINDOW')
+    except: pass
+    try: bpy.utils.unregister_class(Edger)
+    except: pass
+    bpy.types.Scene.isEdgerRunning = False
+    
+class ToggleEdger(bpy.types.Operator):
+    """Start or stop running Edger modal operator"""
+    bl_idname = "uv.toggle_edger"
+    bl_label = "Toggle Edger"
+
+    def execute(self, context):
+        if bpy.types.Scene.isEdgerRunning:
+            StopEdger()
+        else: RunEdger()
+        
+        return {'FINISHED'}
+
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -370,8 +397,8 @@ class Edger(bpy.types.Operator):
     _timer = None
     
     def modal(self, context, event):
-        #if event.type == 'ESC':
-        #    return self.cancel(context)
+        if bpy.types.Scene.isEdgerRunning is False:
+            return self.cancel(context)
         
         if event.type == 'TIMER':
             if context.object is None:
@@ -417,7 +444,9 @@ class Edger(bpy.types.Operator):
     def cancel(self, context):
         context.window_manager.event_timer_remove(self._timer)
         bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+
         return {'CANCELLED'}
+        
 
 #addon_keymaps = []
 #def menu_func_edger(self, context): self.layout.operator(Edger.bl_idname)
@@ -429,8 +458,15 @@ class EdgerPanel(bpy.types.Panel):
     bl_region_type = 'TOOLS'   #TODO
     def draw(self, context):
         layout = self.layout
+        
         row = layout.row()
         row.prop(context.scene, 'isEdgerActive')
+        
+        toggleString = "Run"
+        if bpy.types.Scene.isEdgerRunning:
+            toggleString = "Stop"
+        
+        row.operator(ToggleEdger.bl_idname, text=toggleString, icon = "GROUP_VERTEX")    
         row = layout.row()
         row.prop(context.scene, 'isEdgerDebugActive')
         
@@ -450,23 +486,19 @@ class EdgerPanel(bpy.types.Panel):
 #kmi = km.keymap_items.new(UvSquaresByShape.bl_idname, 'E', 'PRESS', alt=True)
 #addon_keymaps.append((km, kmi))
 
-def init_handler(scene):
-    try: bpy.app.handlers.scene_update_pre.remove(init_handler)
-    except: return
-    bpy.ops.wm.edger()
-
 def register():
     bpy.utils.register_class(Edger)
+    bpy.utils.register_class(ToggleEdger)
     #bpy.utils.register_class(EdgerFunc1)
     bpy.utils.register_class(LockEdgeLoop)
     bpy.utils.register_class(ClearEdgerLoops)
     bpy.utils.register_class(UnselectableVertices)
     bpy.utils.register_class(EdgerPanel)
 
-    bpy.app.handlers.scene_update_pre.append(init_handler)
-
 def unregister():
-    bpy.utils.unregister_class(Edger)
+    try: bpy.utils.unregister_class(Edger)
+    except RuntimeError: pass
+    bpy.utils.unregister_class(ToggleEdger)
     #bpy.utils.unregister_class(EdgerFunc1)
     bpy.utils.unregister_class(LockEdgeLoop)
     bpy.utils.unregister_class(ClearEdgerLoops)
@@ -475,6 +507,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
-    # start edger
-    bpy.ops.wm.edger()
