@@ -15,6 +15,7 @@ bl_info = {
     "category": "Mesh"
 }
 
+#TODO add confirm dialog on stopping edger 
 #TODO check if passing context instead of bpy.context is neccessery
 #TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign just to prevent user modifying
 #TODO if _edger_group vert is selected, select its closer edge afte deselecting
@@ -63,23 +64,17 @@ def AddNewVertexGroup(name):
     except: return bpy.context.object.vertex_groups.new(name)
     return None
 
-'''
-def DeselectGroups(groupVerts):
-    for g in groupVerts:
-        for v in groupVerts[g]:
-            try: v.select = False
-            except: ReInit()
-'''
-
 #def DeselectGroupsSelectCloser(adjInfos):
 def DeselectGroups(adjInfos):
     for i in adjInfos:
         try: 
             if i.target.select is True:            
                 i.target.select = False
+                
                 if i.ratioToEnd1 < 0.5:
                     i.end1.select = True
                 else: i.end2.select = True
+                    
         except: ReInit()
 
 def AdjacentVerts(v, exclude = []):    
@@ -105,7 +100,7 @@ class AdjInfoForVertex(object):
         self.end1 = end1
         self.end2 = end2
         self.UpdateRatio()
-
+       
     def UpdateRatio(self):
         end1ToTarget = (self.end1.co -self.target.co).length
         end1ToEnd2 = (self.end1.co -self.end2.co).length
@@ -114,7 +109,8 @@ class AdjInfoForVertex(object):
     def LockTargetOnEdge(self):
         # c = a + r(b -a)
         self.target.co = self.end1.co +self.ratioToEnd1*(self.end2.co -self.end1.co)
-
+        #TODO check this out copy_from_vert_interp(vert_pair, fac)
+        
 def LockVertsOnEdge(adjInfos):
     for i in adjInfos:
         i.LockTargetOnEdge()
@@ -237,10 +233,9 @@ groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
 
 bpy.types.Scene.isEdgerRunning = False
-bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(
-    name="Active", description="Toggle if Edger is active", default=False)
-bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(
-    name="Draw", description="Toggle if edge loops and unselectables should be drawn", default=False)
+bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Unselect apply", description="If vertex is not selected deselect parent face", default=False)
+bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
+bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=False)
 
 class LockEdgeLoop(bpy.types.Operator):
     """Lock this edge loop as if it was on flat surface"""
@@ -421,7 +416,10 @@ class Edger(bpy.types.Operator):
                     return {'PASS_THROUGH'}
                     
                 DeselectGroups(adjInfos)
+                if context.scene.selectFlushFalse:
+                    bm.select_flush(False)
                 LockVertsOnEdge(adjInfos)
+                
                                 
                 # change theme color, silly!
                 #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
@@ -469,6 +467,7 @@ class EdgerPanel(bpy.types.Panel):
         row.operator(ToggleEdger.bl_idname, text=toggleString, icon = "GROUP_VERTEX")    
         row = layout.row()
         row.prop(context.scene, 'isEdgerDebugActive')
+        row.prop(context.scene, 'selectFlushFalse')
         
         #row = layout.row()
         #row.label(text="Select Edge Loop:")
