@@ -15,7 +15,6 @@ bl_info = {
     "category": "Mesh"
 }
 
-#TODO add confirm dialog on stopping edger 
 #TODO when groups are added/deleted ReInit
 #TODO reinit on history change
 #TODO try alt rmb shortcut to deactivate so verts dont deselect
@@ -294,7 +293,9 @@ groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
 
 bpy.types.Scene.isEdgerRunning = False
-bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Unselect apply", description="If vertex is not selected deselect parent face", default=False)
+
+bpy.types.Scene.deselectGroups = bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
+bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=False)
 
@@ -353,11 +354,6 @@ class UnselectableVertices(bpy.types.Operator):
         ReInit()
         return {'FINISHED'}
 
-'''
-def DeselectAll(bm):
-    for f in bm.faces:
-        f.select = False
-'''
 def MakeSelectedOnlyVertsInGroup(bm, g):
     deform_layer = GetDeformLayer(bm)
     for f in bm.faces:
@@ -470,8 +466,9 @@ class Edger(bpy.types.Operator):
                     
                 if context.scene.isEdgerActive is False:
                     return {'PASS_THROUGH'}
-                    
-                DeselectGroups(adjInfos)
+                
+                if context.scene.deselectGroups:
+                    DeselectGroups(adjInfos)
                 if context.scene.selectFlushFalse:
                     bm.select_flush(False)
                 LockVertsOnEdge(adjInfos)
@@ -507,28 +504,36 @@ class EdgerPanel(bpy.types.Panel):
     bl_region_type = 'TOOLS'   #TODO
     def draw(self, context):
         layout = self.layout
-        
-        row = layout.row()
-        row.prop(context.scene, 'isEdgerActive')
+        row = layout.row()          
         
         toggleString = "Run"
+        ic = "ERROR"
         if bpy.types.Scene.isEdgerRunning:
-            toggleString = "Stop"
-        
-        row.operator(ToggleEdger.bl_idname, text=toggleString, icon = "GROUP_VERTEX")    
+            toggleString = "stop"
+            ic = "X_VEC"
+            
+        if(bpy.types.Scene.isEdgerRunning):
+            row.label(text="")    
+            
+        row.operator(ToggleEdger.bl_idname, text=toggleString, icon = ic)    
         row = layout.row()
-        row.prop(context.scene, 'isEdgerDebugActive')
-        row.prop(context.scene, 'selectFlushFalse')
         
-        #row = layout.row()
-        #row.label(text="Select Edge Loop:")
-        split = layout.split()
-        col = split.column(align=True)
-        #col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
-        col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
-        col.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
-        row = layout.row()
-        #row.label(text="bla bla bla:")
+        if(bpy.types.Scene.isEdgerRunning):
+            row.prop(context.scene, 'isEdgerActive')
+            row.prop(context.scene, 'deselectGroups')
+            row = layout.row()
+            row.prop(context.scene, 'isEdgerDebugActive')
+            row.prop(context.scene, 'selectFlushFalse')
+        
+            row = layout.row()
+            #row.label(text="")
+            split = layout.split()
+            col = split.column(align=True)
+            #col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
+            #row.label(text="bla bla bla:")
+            col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
+            col.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
+            row = layout.row()
         
 #handle the keymap
 #wm = bpy.context.window_manager
