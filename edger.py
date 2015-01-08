@@ -85,7 +85,7 @@ def RefineGroups(obj, bm, groupVerts):
         ng = AddNewVertexGroup("_edger_")
         AddVertsToGroup(bm, verts, ng)
     
-    ncName = "_edger_noncyclic"
+    ncName = "_noncyclics_edger_"
     nc = GetGroupByName(ncName)
     if nc: DeleteGroup(obj, nc)
     
