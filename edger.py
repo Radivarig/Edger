@@ -340,7 +340,7 @@ adjInfos = []
 bpy.types.Scene.isEdgerRunning = False
 bpy.types.Scene.deselectGroups = True
 bpy.types.Scene.isSelectFlush = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
-bpy.types.Scene.isEdgerActive = False
+bpy.types.Scene.isEdgerActive = True
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=True)
 
 #bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
@@ -628,8 +628,13 @@ class EdgerPanel(bpy.types.Panel):
             row.label(text="")
             row.operator(ToggleEdger.bl_idname, text="stop", icon = "X_VEC")
         else:
-            row.operator(ToggleEdger.bl_idname, text="Run", icon = "ERROR")    
+            row = layout.row();row.label(text="")
+            row = layout.row();row.label(text="")
+            row = layout.row();row.label(text="")
+            row = layout.row();row.label(text="")
             row = layout.row()
+            row.operator(ToggleEdger.bl_idname, text="Run", icon = "POSE_HLT")    
+            row.label(text="")            
           
         
             
