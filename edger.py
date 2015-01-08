@@ -338,10 +338,13 @@ adjInfos = []
 #noncyclics = []
 
 bpy.types.Scene.isEdgerRunning = False
-bpy.types.Scene.deselectGroups = bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
+bpy.types.Scene.deselectGroups = True
 bpy.types.Scene.isSelectFlush = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
-bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
-bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=False)
+bpy.types.Scene.isEdgerActive = False
+bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=True)
+
+#bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
+#bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
 
 class UnlockEdgeLoop(bpy.types.Operator):
     """Unlock SINGLE selected edge loop"""
@@ -508,6 +511,15 @@ class ToggleLocking(bpy.types.Operator):
     def execute(self, context):
         bpy.types.Scene.isEdgerActive = not bpy.types.Scene.isEdgerActive
         return {'FINISHED'}
+    
+class ToggleDeselecting(bpy.types.Operator):
+    """Toggle Deselecting of locked vertices"""
+    bl_idname = "uv.toggle_edger_deselecting"
+    bl_label = "Toggle Edger Deselecting"
+
+    def execute(self, context):
+        bpy.types.Scene.deselectGroups = not bpy.types.Scene.deselectGroups
+        return {'FINISHED'}
 
 bpy.props.StringProperty()
 class Edger(bpy.types.Operator):
@@ -590,7 +602,11 @@ class EdgerPanel(bpy.types.Panel):
                 ic = "LOCKED"
             row.operator(ToggleLocking.bl_idname, text="Lock", icon=ic)
             
-            row.prop(context.scene, 'deselectGroups')
+            ic = "RESTRICT_SELECT_OFF"
+            if bpy.types.Scene.deselectGroups:
+                ic = "RESTRICT_SELECT_ON"
+            row.operator(ToggleDeselecting.bl_idname, text="Deselect", icon=ic)
+            
             row = layout.row()
             row.prop(context.scene, 'isEdgerDebugActive')
             row.prop(context.scene, 'isSelectFlush')
@@ -629,6 +645,7 @@ def register():
     bpy.utils.register_class(ToggleEdger)
     #bpy.utils.register_class(EdgerFunc1)
     bpy.utils.register_class(LockEdgeLoop)
+    bpy.utils.register_class(ToggleDeselecting)
     bpy.utils.register_class(ToggleLocking)
     bpy.utils.register_class(UnlockEdgeLoop)
     bpy.utils.register_class(ClearEdgerLoops)
@@ -641,6 +658,7 @@ def unregister():
     bpy.utils.unregister_class(ToggleEdger)
     #bpy.utils.unregister_class(EdgerFunc1)
     bpy.utils.unregister_class(LockEdgeLoop)
+    bpy.utils.unregister_class(ToggleDeselecting)
     bpy.utils.unregister_class(ToggleLocking)
     bpy.utils.unregister_class(UnlockEdgeLoop)
     bpy.utils.unregister_class(ClearEdgerLoops)
