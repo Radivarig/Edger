@@ -15,6 +15,7 @@ bl_info = {
     "category": "Mesh"
 }
 
+#TODO noncyclics get drawed when Edger is unregistered
 #TODO when groups are added/deleted ReInit
 #TODO reinit on history change
 #TODO try alt rmb shortcut to deactivate so verts dont deselect
@@ -45,7 +46,6 @@ def walk_edgeloop(l):
         
 def RefineGroups(obj, bm, groupVerts):
     allGroups = set()
-    #nonLoopVerts = []
     for g in groupVerts:
         for v in groupVerts[g]:
             for l in v.link_loops:
@@ -71,6 +71,11 @@ def RefineGroups(obj, bm, groupVerts):
                                 forSet.append(v)
                         allGroups.add(frozenset(forSet))
     
+    allVertsOld, allVertsNew = set(), set()
+    for g in groupVerts: allVertsOld.update(groupVerts[g])
+    for verts in allGroups: allVertsNew.update(verts)
+    nonCyclicVerts = list(allVertsOld -allVertsNew)
+
     deletion = []
     for g in groupVerts:
         deletion.append(g)
@@ -79,6 +84,22 @@ def RefineGroups(obj, bm, groupVerts):
     for verts in allGroups:
         ng = AddNewVertexGroup("_edger_")
         AddVertsToGroup(bm, verts, ng)
+    
+    ncName = "_edger_noncyclic"
+    nc = GetGroupByName(ncName)
+    if nc: DeleteGroup(obj, nc)
+    
+    nc = AddNewVertexGroup(ncName)
+    AddVertsToGroup(bm, nonCyclicVerts, nc)
+    #noncyclics = nonCyclicVerts
+
+def GetSpecificGroupVerts(obj, bm, g):
+    verts = []
+    deform_layer = GetDeformLayer(bm)
+    for v in bm.verts:
+        if g.index in v[deform_layer]:
+            verts.append(v)
+    return verts
 
 def GetGroupVerts(obj, bm):
     groupVerts = {}
@@ -164,7 +185,8 @@ class AdjInfoForVertex(object):
     def LockTargetOnEdge(self):
         # c = a + r(b -a)
         #TODO try except here!!
-        self.target.co = self.end1.co +self.ratioToEnd1*(self.end2.co -self.end1.co)
+        try: self.target.co = self.end1.co +self.ratioToEnd1*(self.end2.co -self.end1.co)
+        except: return
         #TODO check this out copy_from_vert_interp(vert_pair, fac)
         
 def LockVertsOnEdge(adjInfos):
@@ -203,24 +225,31 @@ def draw_callback_px(self, context):
         return
     
     obj = context.object
+    me = obj.data
+    bm = bmesh.from_edit_mesh(me)
     context.area.tag_redraw()
     
-    #draw unselectables
-    #verts2d = from group _unselectable_
-    #DrawByVertices("points", verts2d, [0.5, 1.0, 0.1, 0.5])
+    #draw noncyclics
+    #TODO
+    #global noncyclics
+    #verts2d = Get2dFrom3dVerts(context, noncyclics)
+    #DrawByVertices("points", verts2d, [0.1, 0.1, 0.5, 0.6])
     
     for g in groupVerts:
-        verts2d = []
-        for v in groupVerts[g]:
-            try:
-                v_worldCo = obj.matrix_world*v.co
-                #v_worldCo = v.co
-                new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v_worldCo)
-                verts2d.append([new2dCo.x,new2dCo.y])
-            except:
-                #TODO this happens when running as script and not as addon since multiple registered instances exist, qfix:restart blender 
-                continue
+        verts2d = Get2dFrom3dVerts(context, groupVerts[g])
         DrawByVertices("lines", verts2d, [0.5, 0.1, 0.1, 0.5])
+
+def Get2dFrom3dVerts(context, verts3d):
+    verts2d =[]
+    for v in verts3d:
+        try: 
+            v_worldCo = obj.matrix_world*v.co
+            new2dCo = location_3d_to_region_2d(context.region, context.space_data.region_3d, v_worldCo)
+            verts2d.append([new2dCo.x,new2dCo.y])
+        #TODO multiple registered instances when running SCRIPT, qfix:restart blender 
+        except: continue
+
+    return verts2d
 
 def SortGroupVertsByAdjacent(groupVerts):
     for g in groupVerts:
@@ -292,6 +321,7 @@ isEditMode = False
 obj, me, bm = None, None, None
 groupVerts = {}     #dict[g] = [list, of, vertices]
 adjInfos = []
+#noncyclics = []
 
 bpy.types.Scene.isEdgerRunning = False
 
