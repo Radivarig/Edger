@@ -283,6 +283,7 @@ def ReInit(context = None):
     
     groupVerts = GetGroupVerts(obj, bm)
     RefineGroups(obj, bm, groupVerts)
+    groupVerts = GetGroupVerts(obj, bm)
     SortGroupVertsByAdjacent(groupVerts)
     adjInfos = GetAdjInfos(groupVerts)
     
