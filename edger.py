@@ -90,12 +90,14 @@ def RefineGroups(obj, bm, groupVerts):
         ng = AddNewVertexGroup("_edger_")
         AddVertsToGroup(bm, verts, ng)
     
-    ncName = "_noncyclics_edger_"
-    nc = GetGroupByName(ncName)
-    if nc: DeleteGroup(obj, nc)
+    #ncName = "_noncyclics_edger_"
+    #nc = GetGroupByName(ncName)
+    #if nc: 
+    #    nonCyclicVerts += GetSpecificGroupVerts(obj, bm, nc)
+    #    DeleteGroup(obj, nc)
     
-    nc = AddNewVertexGroup(ncName)
-    AddVertsToGroup(bm, nonCyclicVerts, nc)
+    #nc = AddNewVertexGroup(ncName)
+    #AddVertsToGroup(bm, nonCyclicVerts, nc)
     #noncyclics = nonCyclicVerts
 
 def GetSpecificGroupVerts(obj, bm, g):
@@ -231,7 +233,10 @@ def GetGroupByName(name):
     except: return None
 
 def draw_callback_px(self, context):
-    if context.scene.isEdgerDebugActive is False:
+    #if context.object and context.object.mode is not "EDIT":
+    #    return
+    if context.scene.isEdgerRunning is False or \
+       context.scene.isEdgerDebugActive is False:
         return
     
     obj = context.object
@@ -240,7 +245,6 @@ def draw_callback_px(self, context):
     context.area.tag_redraw()
     
     #draw noncyclics
-    #TODO
     #global noncyclics
     #verts2d = Get2dFrom3dVerts(context, noncyclics)
     #DrawByVertices("points", verts2d, [0.1, 0.1, 0.5, 0.6])
