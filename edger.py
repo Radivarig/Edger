@@ -7,7 +7,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 3, 3),
+    "version": (0, 3, 4),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -130,6 +130,11 @@ def GetGroupVerts(obj, bm):
         #delete empty
         groupVerts = {k: v for k, v in groupVerts.items() if len(v) is not 0}
         DeleteGroups(obj, deletion)
+        nc = GetGroupByName("_noncyclics_edger_")
+        if nc:
+            ncv = GetSpecificGroupVerts(obj, bm, nc)
+            if len(ncv) is 0:
+                DeleteGroup(obj, nc)
             
     return groupVerts    
 
