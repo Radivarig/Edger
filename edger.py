@@ -339,7 +339,7 @@ adjInfos = []
 
 bpy.types.Scene.isEdgerRunning = False
 bpy.types.Scene.deselectGroups = bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
-bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
+bpy.types.Scene.isSelectFlush = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=False)
 
@@ -499,7 +499,17 @@ class ToggleEdger(bpy.types.Operator):
         else: RunEdger()
         
         return {'FINISHED'}
+    
+class ToggleLocking(bpy.types.Operator):
+    """Toggle Locking of vertices on a line"""
+    bl_idname = "uv.toggle_edger_locking"
+    bl_label = "Toggle Edger Locking"
 
+    def execute(self, context):
+        bpy.types.Scene.isEdgerActive = not bpy.types.Scene.isEdgerActive
+        return {'FINISHED'}
+
+bpy.props.StringProperty()
 class Edger(bpy.types.Operator):
     """Lock vertices on edge"""
     bl_idname = "wm.edger"
@@ -535,7 +545,7 @@ class Edger(bpy.types.Operator):
                 
                 if context.scene.deselectGroups:
                     DeselectGroups(adjInfos)
-                if context.scene.selectFlushFalse:
+                if context.scene.isSelectFlush is False:
                     bm.select_flush(False)
                 LockVertsOnEdge(adjInfos)
                
@@ -573,11 +583,17 @@ class EdgerPanel(bpy.types.Panel):
         row = layout.row()          
  
         if(bpy.types.Scene.isEdgerRunning):
-            row.prop(context.scene, 'isEdgerActive')
+            #row.prop(context.scene, 'isEdgerActive')
+            
+            ic = "UNLOCKED"
+            if bpy.types.Scene.isEdgerActive:
+                ic = "LOCKED"
+            row.operator(ToggleLocking.bl_idname, text="Lock", icon=ic)
+            
             row.prop(context.scene, 'deselectGroups')
             row = layout.row()
             row.prop(context.scene, 'isEdgerDebugActive')
-            row.prop(context.scene, 'selectFlushFalse')
+            row.prop(context.scene, 'isSelectFlush')
         
             #row = layout.row()
             #row.label(text="")
@@ -613,6 +629,7 @@ def register():
     bpy.utils.register_class(ToggleEdger)
     #bpy.utils.register_class(EdgerFunc1)
     bpy.utils.register_class(LockEdgeLoop)
+    bpy.utils.register_class(ToggleLocking)
     bpy.utils.register_class(UnlockEdgeLoop)
     bpy.utils.register_class(ClearEdgerLoops)
     bpy.utils.register_class(UnselectableVertices)
@@ -624,6 +641,7 @@ def unregister():
     bpy.utils.unregister_class(ToggleEdger)
     #bpy.utils.unregister_class(EdgerFunc1)
     bpy.utils.unregister_class(LockEdgeLoop)
+    bpy.utils.unregister_class(ToggleLocking)
     bpy.utils.unregister_class(UnlockEdgeLoop)
     bpy.utils.unregister_class(ClearEdgerLoops)
     bpy.utils.unregister_class(UnselectableVertices)
