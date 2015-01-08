@@ -329,7 +329,6 @@ adjInfos = []
 #noncyclics = []
 
 bpy.types.Scene.isEdgerRunning = False
-
 bpy.types.Scene.deselectGroups = bpy.props.BoolProperty(name="Deselect", description="Deselect all verts from _edger_groups, and select edge end", default=True)
 bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Flush", description="If vertex is not selected deselect parent face", default=False)
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
@@ -563,19 +562,7 @@ class EdgerPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         row = layout.row()          
-        
-        toggleString = "Run"
-        ic = "ERROR"
-        if bpy.types.Scene.isEdgerRunning:
-            toggleString = "stop"
-            ic = "X_VEC"
-            
-        if(bpy.types.Scene.isEdgerRunning):
-            row.label(text="")    
-            
-        row.operator(ToggleEdger.bl_idname, text=toggleString, icon = ic)    
-        row = layout.row()
-        
+ 
         if(bpy.types.Scene.isEdgerRunning):
             row.prop(context.scene, 'isEdgerActive')
             row.prop(context.scene, 'deselectGroups')
@@ -591,11 +578,20 @@ class EdgerPanel(bpy.types.Panel):
             #row.label(text="Edgeloops")
             row = layout.row()
             sub = row.row(align=True)
-            sub.operator(LockEdgeLoop.bl_idname, text="Lock", icon = "ZOOMIN")
-            sub.operator(UnlockEdgeLoop.bl_idname, text="Unlock", icon = "ZOOMOUT")
+            sub.operator(LockEdgeLoop.bl_idname, text="Add", icon = "ZOOMIN")
+            sub.operator(UnlockEdgeLoop.bl_idname, text="Remove", icon = "ZOOMOUT")
             
             row = layout.row()
             row.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
+            row = layout.row()
+            row.label(text="")
+            row.operator(ToggleEdger.bl_idname, text="stop", icon = "X_VEC")
+        else:
+            row.operator(ToggleEdger.bl_idname, text="Run", icon = "ERROR")    
+            row = layout.row()
+          
+        
+            
         
 #handle the keymap
 #wm = bpy.context.window_manager
