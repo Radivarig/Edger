@@ -25,6 +25,102 @@ bl_info = {
 #TODO moving and canceling with RMB spawns shadows
 #TODO detect group from selected and remove via button
 
+
+def walk_edgeloop(l):
+    
+    e_first = l.edge
+    e = None
+    while True:
+        e = l.edge
+        yield e
+
+        if e.is_manifold is False:
+            print("not manifold")
+            break
+        
+        l = l.link_loop_next
+        
+        l = l.link_loop_radial_next
+        if len(l.face.verts) is not 4:
+            break
+        
+        l = l.link_loop_next
+        if l.edge is e_first:
+            break
+
+'''
+def GetGroupVerts(obj, bm):
+    groupVerts = []
+   
+    edgerGroup = None
+    edgerVerts = []
+    
+    if obj is None or bm is None: return []
+    
+    for g in obj.vertex_groups:
+        if g.name.startswith("_edger_"):
+            edgerGroup = g
+            break
+       
+    if edgerGroup is None: return []
+    
+    deform_layer = GetDeformLayer(bm)
+    for v in bm.verts:
+        if edgerGroup.index in v[deform_layer]:
+            #if v not in groupVerts[g]:
+            edgerVerts.append(v)
+    
+    if len(edgerVerts) is <2: return []
+    
+ 
+    edge = bmesh.types.BMEdgeSeq.get([edgeVerts[0], edgeVerts[1])
+    
+    for e in walk_edgeloop(edge.link_loops[0])
+        e.select = True
+    
+    while(1):
+        a=1
+
+    return groupVerts
+'''
+
+def RefineGroups(obj, bm, groupVerts):
+    allGroups = set()
+    #nonLoopVerts = []
+    for g in groupVerts:
+        for v in groupVerts[g]:
+            for l in v.link_loops:
+                validEdges = []
+                for e in walk_edgeloop(l):
+                    ve1, ve2 = e.verts[0], e.verts[1]
+                    gr = groupVerts[g]
+                    
+                    if ve1 not in gr or ve2 not in gr:
+                        break
+                    validEdges.append(e)
+                 
+                if len(validEdges) >2:
+                    e1 = validEdges[0]
+                    e2 = validEdges[len(validEdges)-1]
+                    
+                    #if loop is cyclic
+                    if e1.verts[0] in e2.verts or \
+                       e1.verts[1] in e2.verts:
+                        forSet = []
+                        for e in validEdges:
+                            for v in e.verts:
+                                forSet.append(v)
+                        allGroups.add(frozenset(forSet))
+    
+    deletion = []
+    for g in groupVerts:
+        deletion.append(g)
+    DeleteGroups(obj, deletion)
+    
+    for verts in allGroups:
+        ng = AddNewVertexGroup("_edger_")
+        AddVertsToGroup(bm, verts, ng)
+
 def GetGroupVerts(obj, bm):
     groupVerts = {}
     if obj and bm:
@@ -127,6 +223,11 @@ def RemoveVertsFromGroup(bm, verts, g):
     for v in verts:
         del v[deform_layer][g.index]
 
+def AddVertsToGroup(bm, verts, g):
+    deform_layer = GetDeformLayer(bm)
+    for v in verts:
+        v[deform_layer][g.index] = 1     #set weight to 1 as usual default
+    
 def AddSelectedToGroup(bm, g):
     deform_layer = GetDeformLayer(bm)
     for v in bm.verts:
@@ -222,6 +323,7 @@ def ReInit(context = None):
     
     #compare groupVerts vertices by index and position, if there are external remove them from group
     groupVerts = GetGroupVerts(obj, bm)
+    RefineGroups(obj, bm, groupVerts)
     SortGroupVertsByAdjacent(groupVerts)
     adjInfos = GetAdjInfos(groupVerts)
     #RemoveVertsFromGroup(bm, bm.verts, GetGroupByName("_edger_.0"))
@@ -289,12 +391,14 @@ class UnselectableVertices(bpy.types.Operator):
     
     def execute(self, context):
         global obj, me, bm
+        '''
         name = "_unselectable_"
         g = GetGroupByName(name)
         if g is not None:
             g = AddNewVertexGroup(name)
         AddSelectedToGroup(bm, g)
-
+        '''
+        ReInit()
         return {'FINISHED'}
 
 '''
