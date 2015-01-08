@@ -3,6 +3,7 @@ Edger
 
 Edger is edit-mode tool for easy manipulation of mesh that has edgeloops, it works by adding loops to vertex groups and "locks them on a line" allowing the mesh to behave like it has only one edge on some parts, while that edge is divided.
 
+[youtube demo](https://www.youtube.com/watch?v=ToHbROhUrEc)
 Features:
 --
 * lock edgeloop verts on the line they sit
