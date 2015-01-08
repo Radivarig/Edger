@@ -54,7 +54,10 @@ def RefineGroups(obj, bm, groupVerts):
                     ve1, ve2 = e.verts[0], e.verts[1]
                     gr = groupVerts[g]
                     
-                    if ve1 not in gr or ve2 not in gr:
+                    if ve1 not in gr or ve2 not in gr or \
+                       len(ve1.link_edges) is 3 or \
+                       len(ve2.link_edges) is 3:
+                        validEdges = []
                         break
                     validEdges.append(e)
                  
@@ -69,6 +72,8 @@ def RefineGroups(obj, bm, groupVerts):
                         for e in validEdges:
                             for v in e.verts:
                                 forSet.append(v)
+                                #v.select = True
+                                
                         allGroups.add(frozenset(forSet))
     
     allVertsOld, allVertsNew = set(), set()
