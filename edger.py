@@ -105,7 +105,7 @@ def GetGroupVerts(obj, bm):
         groupVerts = {k: v for k, v in groupVerts.items() if len(v) is not 0}
         DeleteGroups(obj, deletion)
             
-    return groupVerts
+    return groupVerts    
 
 def DeleteGroups(obj, groups):
     for g in groups: DeleteGroup(obj, g)
@@ -163,6 +163,7 @@ class AdjInfoForVertex(object):
        
     def LockTargetOnEdge(self):
         # c = a + r(b -a)
+        #TODO try except here!!
         self.target.co = self.end1.co +self.ratioToEnd1*(self.end2.co -self.end1.co)
         #TODO check this out copy_from_vert_interp(vert_pair, fac)
         
@@ -299,8 +300,36 @@ bpy.types.Scene.selectFlushFalse = bpy.props.BoolProperty(name="Flush", descript
 bpy.types.Scene.isEdgerActive = bpy.props.BoolProperty(name="Active", description="Toggle if Edger is active", default=False)
 bpy.types.Scene.isEdgerDebugActive = bpy.props.BoolProperty(name="Draw", description="Toggle if edge loops should be drawn", default=False)
 
+class UnlockEdgeLoop(bpy.types.Operator):
+    """Unlock SINGLE selected edge loop"""
+    bl_idname = "wm.unlock_edge_loop_idname"
+    bl_label = "UnlockEdgeLoop_label"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    
+    def execute(self, context):
+        obj = context.object
+        me = obj.data
+        bm = bmesh.from_edit_mesh(me)
+        
+        global groupVerts
+        
+        selected = []
+        for v in bm.verts:
+            if v.select is True:
+                selected.append(v)
+        
+        for g in groupVerts:
+            if DoesListContainsList(groupVerts[g], selected):
+                DeleteGroup(obj, g)
+                break
+       
+        ReInit()
+        
+        return {'FINISHED'}
+
 class LockEdgeLoop(bpy.types.Operator):
-    """Lock this edge loop as if it was on flat surface"""
+    """Lock selected edgeloop(s) as if it was on flat surface"""
     bl_idname = "wm.lock_edge_loop_idname"
     bl_label = "LockEdgeLoop_label"
     bl_space_type = 'VIEW_3D'
@@ -323,12 +352,6 @@ class LockEdgeLoop(bpy.types.Operator):
         ReInit()
         
         return {'FINISHED'}
-
-#remove all verts of of_g from all other groups if of_g is their subset 
-def RemoveVertsIfSubsetOfOtherGroups(verts, bm, groupVerts):
-    for g in groupVerts:
-        if DoesListContainsList(groupVerts[g], verts):
-            RemoveVertsFromGroup(bm, verts, g)
 
 def DoesListContainsList(big, small):
     for s in small:
@@ -525,15 +548,19 @@ class EdgerPanel(bpy.types.Panel):
             row.prop(context.scene, 'isEdgerDebugActive')
             row.prop(context.scene, 'selectFlushFalse')
         
-            row = layout.row()
+            #row = layout.row()
             #row.label(text="")
             split = layout.split()
             col = split.column(align=True)
             #col.operator(UnselectableVertices.bl_idname, text="Unselectable", icon = "RESTRICT_SELECT_ON")
-            #row.label(text="bla bla bla:")
-            col.operator(LockEdgeLoop.bl_idname, text="Lock Edge Loop", icon = "GROUP_VERTEX")
-            col.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
+            #row.label(text="Edgeloops")
             row = layout.row()
+            sub = row.row(align=True)
+            sub.operator(LockEdgeLoop.bl_idname, text="Lock", icon = "ZOOMIN")
+            sub.operator(UnlockEdgeLoop.bl_idname, text="Unlock", icon = "ZOOMOUT")
+            
+            row = layout.row()
+            row.operator(ClearEdgerLoops.bl_idname, text="Clear Loops", icon = "MOD_SOLIDIFY")
         
 #handle the keymap
 #wm = bpy.context.window_manager
@@ -546,6 +573,7 @@ def register():
     bpy.utils.register_class(ToggleEdger)
     #bpy.utils.register_class(EdgerFunc1)
     bpy.utils.register_class(LockEdgeLoop)
+    bpy.utils.register_class(UnlockEdgeLoop)
     bpy.utils.register_class(ClearEdgerLoops)
     bpy.utils.register_class(UnselectableVertices)
     bpy.utils.register_class(EdgerPanel)
@@ -556,6 +584,7 @@ def unregister():
     bpy.utils.unregister_class(ToggleEdger)
     #bpy.utils.unregister_class(EdgerFunc1)
     bpy.utils.unregister_class(LockEdgeLoop)
+    bpy.utils.unregister_class(UnlockEdgeLoop)
     bpy.utils.unregister_class(ClearEdgerLoops)
     bpy.utils.unregister_class(UnselectableVertices)
     bpy.utils.unregister_class(EdgerPanel)
