@@ -7,7 +7,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 bl_info = {
     "name": "Edger",
     "author": "Reslav Hollos",
-    "version": (0, 2, 10),
+    "version": (0, 3, 0),
     "blender": (2, 72, 0),
     "description": "Lock vertices on \"edge\" they lay, make unselectable edge loops for subdivision",
     "warning": "",
@@ -16,15 +16,11 @@ bl_info = {
 }
 
 #TODO add confirm dialog on stopping edger 
-#TODO check if passing context instead of bpy.context is neccessery
-#TODO bug in ctrlR adding edgeloop adds it to groups, when this is resolved lock groups after assign just to prevent user modifying
-#TODO if _edger_group vert is selected, select its closer edge afte deselecting
 #TODO when groups are added/deleted ReInit
 #TODO reinit on history change
 #TODO try alt rmb shortcut to deactivate so verts dont deselect
 #TODO moving and canceling with RMB spawns shadows
 #TODO detect group from selected and remove via button
-
 
 def walk_edgeloop(l):
     
@@ -47,43 +43,7 @@ def walk_edgeloop(l):
         l = l.link_loop_next
         if l.edge is e_first:
             break
-
-'''
-def GetGroupVerts(obj, bm):
-    groupVerts = []
-   
-    edgerGroup = None
-    edgerVerts = []
-    
-    if obj is None or bm is None: return []
-    
-    for g in obj.vertex_groups:
-        if g.name.startswith("_edger_"):
-            edgerGroup = g
-            break
-       
-    if edgerGroup is None: return []
-    
-    deform_layer = GetDeformLayer(bm)
-    for v in bm.verts:
-        if edgerGroup.index in v[deform_layer]:
-            #if v not in groupVerts[g]:
-            edgerVerts.append(v)
-    
-    if len(edgerVerts) is <2: return []
-    
- 
-    edge = bmesh.types.BMEdgeSeq.get([edgeVerts[0], edgeVerts[1])
-    
-    for e in walk_edgeloop(edge.link_loops[0])
-        e.select = True
-    
-    while(1):
-        a=1
-
-    return groupVerts
-'''
-
+        
 def RefineGroups(obj, bm, groupVerts):
     allGroups = set()
     #nonLoopVerts = []
@@ -321,13 +281,11 @@ def ReInit(context = None):
     me = obj.data
     bm = bmesh.from_edit_mesh(me)
     
-    #compare groupVerts vertices by index and position, if there are external remove them from group
     groupVerts = GetGroupVerts(obj, bm)
     RefineGroups(obj, bm, groupVerts)
     SortGroupVertsByAdjacent(groupVerts)
     adjInfos = GetAdjInfos(groupVerts)
-    #RemoveVertsFromGroup(bm, bm.verts, GetGroupByName("_edger_.0"))
-
+    
 #has to be global to sustain adjInfos between modal calls :'( sorry global haters )':
 isEditMode = False
 obj, me, bm = None, None, None
@@ -359,14 +317,7 @@ class LockEdgeLoop(bpy.types.Operator):
         g = AddNewVertexGroup(name + "." + str(counter))
         AddSelectedToGroup(bm, g)
         
-        #fetch new group
-        #newVerts = []
-        #deform_layer = GetDeformLayer(bm)
-        #for v in bm.verts:
-        #    if g.index in v[deform_layer]:
-        #        newVerts.append(v)
-        
-        #RemoveVertsIfSubsetOfOtherGroups(newVerts, bm, groupVerts)
+       
         ReInit()
         
         return {'FINISHED'}
@@ -523,12 +474,7 @@ class Edger(bpy.types.Operator):
                 if context.scene.selectFlushFalse:
                     bm.select_flush(False)
                 LockVertsOnEdge(adjInfos)
-                
-                                
-                # change theme color, silly!
-                #color = context.user_preferences.themes[0].view_3d.space.gradients.high_gradient
-                #color.s = 1.0
-                #color.h += 0.01
+               
             else:
                 isEditMode = False
 
