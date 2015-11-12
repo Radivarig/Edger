@@ -449,7 +449,7 @@ class ClearEdgerLoops(bpy.types.Operator):
         global obj, me, bm
         global groupVerts
         
-        context.scene.isEdgerActive = False
+        bpy.types.Scene.isEdgerActive = False
 
         groups = []
         for g in obj.vertex_groups:
